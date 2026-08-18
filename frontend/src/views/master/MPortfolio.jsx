@@ -1,0 +1,120 @@
+import { Card, Chip, TableWrap } from '../../components/Ui.jsx';
+import { fmtD, inr, inrF, psf } from '../../lib/core.js';
+import { roll } from '../../lib/derived.js';
+
+export default function MPortfolio({ c }) {
+  const r = roll(c);
+
+  return (
+    <>
+      <Card title="Units" hint="rollup across all three entities" pad={false}>
+        <TableWrap>
+          <table className="w-full border-collapse">
+            <thead>
+              <tr>
+                <th className="text-left text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 whitespace-nowrap">Unit</th>
+                <th className="text-left text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 whitespace-nowrap">Milestones</th>
+                <th className="text-right text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 whitespace-nowrap">Area</th>
+                <th className="text-right text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 whitespace-nowrap">Rate paid</th>
+                <th className="text-right text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 whitespace-nowrap">Consideration</th>
+                <th className="text-right text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 whitespace-nowrap">Paid</th>
+                <th className="text-right text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 whitespace-nowrap">Value today</th>
+                <th className="text-right text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 whitespace-nowrap">Gain</th>
+                <th className="text-left text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 whitespace-nowrap">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {r.all.map((u) => (
+                <tr key={u.unit} className={u.exited ? 'bg-red-50/40 dark:bg-red-900/10' : undefined}>
+                  <td className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm whitespace-nowrap">
+                    <b>{u.unit}</b>
+                    <div className="text-[10.5px] text-gray-400 dark:text-gray-500">{u.project}<br />{u.entity}</div>
+                  </td>
+                  <td className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm whitespace-nowrap text-[10.5px] text-gray-400 dark:text-gray-500">
+                    Booked {fmtD(u.bookDate)}<br />
+                    Agreement {fmtD(u.agrDate)}<br />
+                    Registry {u.regDate ? fmtD(u.regDate) : <span className="text-amber-600 dark:text-amber-400">pending</span>}<br />
+                    Possession {u.possDate ? fmtD(u.possDate) : <span className="text-amber-600 dark:text-amber-400">pending</span>}
+                  </td>
+                  <td className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm whitespace-nowrap text-right tabular-nums">
+                    {u.saleable}
+                    <div className="text-[10.5px] text-gray-400 dark:text-gray-500">carpet {u.carpet} · load {u.loading}%</div>
+                  </td>
+                  <td className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm whitespace-nowrap text-right tabular-nums">
+                    {psf(u.rate)}
+                    {!!u.discount && <div className="text-[10.5px] text-gray-400 dark:text-gray-500">less {inr(u.discount)}</div>}
+                  </td>
+                  <td className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm whitespace-nowrap text-right tabular-nums">{inrF(u.consideration)}</td>
+                  <td className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm whitespace-nowrap text-right tabular-nums">
+                    {inrF(u.paid)}
+                    <div className="text-[10.5px] text-gray-400 dark:text-gray-500">{u.paidPct.toFixed(0)}%{u.outstanding ? ' · due ' + inr(u.outstanding) : ''}</div>
+                  </td>
+                  <td className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm whitespace-nowrap text-right tabular-nums">
+                    {u.exited ? '—' : inrF(u.currentValue)}
+                    <div className="text-[10.5px] text-gray-400 dark:text-gray-500">{u.exited ? 'sold' : psf(u.valueRate) + '/sq.ft.'}</div>
+                  </td>
+                  <td className={`px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm whitespace-nowrap text-right tabular-nums font-bold ${u.exited ? 'text-gray-400 dark:text-gray-500' : 'text-green-600 dark:text-green-400'}`}>
+                    {u.exited ? inr((u.exitRate - u.rate) * u.saleable) : inr(u.gain)}
+                    <div className="text-[10.5px] font-normal text-gray-400 dark:text-gray-500">{u.gainPct.toFixed(0)}% · {u.cagr.toFixed(1)}% p.a.</div>
+                  </td>
+                  <td className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm whitespace-nowrap">
+                    {u.exited ? <Chip cls="r">exited {fmtD(u.exitDate)}</Chip>
+                      : u.valStale ? <Chip cls="w">valuation stale</Chip>
+                      : u.regDate ? <Chip cls="g">registered</Chip>
+                      : <Chip cls="w">registry pending</Chip>}
+                  </td>
+                </tr>
+              ))}
+              {r.units.length > 1 && (
+                <tr className="bg-gray-50 dark:bg-gray-900/40 font-bold">
+                  <td className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm whitespace-nowrap" colSpan={4}>Rollup — {r.units.length} live units</td>
+                  <td className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm whitespace-nowrap text-right tabular-nums">{inrF(r.consideration)}</td>
+                  <td className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm whitespace-nowrap text-right tabular-nums">{inrF(r.paid)}</td>
+                  <td className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm whitespace-nowrap text-right tabular-nums">{inrF(r.value)}</td>
+                  <td className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm whitespace-nowrap text-right tabular-nums text-green-600 dark:text-green-400">{inr(r.gain)}</td>
+                  <td className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm whitespace-nowrap" />
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </TableWrap>
+      </Card>
+
+      <Card title="Valuation basis" hint="what makes the gain figure defensible">
+        <TableWrap>
+          <table className="w-full border-collapse">
+            <thead>
+              <tr>
+                <th className="text-left text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 whitespace-nowrap">Project</th>
+                <th className="text-right text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 whitespace-nowrap">Our ask</th>
+                <th className="text-right text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 whitespace-nowrap">Recent resale</th>
+                <th className="text-right text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 whitespace-nowrap">Circle</th>
+                <th className="text-right text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 whitespace-nowrap">We use</th>
+                <th className="text-left text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 whitespace-nowrap">Note dated</th>
+                <th className="text-left text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 whitespace-nowrap">Basis</th>
+              </tr>
+            </thead>
+            <tbody>
+              {r.all.map((u) => (
+                <tr key={u.unit}>
+                  <td className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm whitespace-nowrap">{u.project}</td>
+                  <td className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm whitespace-nowrap text-right tabular-nums text-[10.5px] text-gray-400 dark:text-gray-500">{psf(u.val.ask)}</td>
+                  <td className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm whitespace-nowrap text-right tabular-nums">{psf(u.val.resale)}</td>
+                  <td className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm whitespace-nowrap text-right tabular-nums">{psf(u.val.circle)}</td>
+                  <td className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm whitespace-nowrap text-right tabular-nums"><b>{psf(u.valueRate)}</b></td>
+                  <td className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm whitespace-nowrap">{fmtD(u.val.notedOn)} {u.valStale && <Chip cls="r">stale</Chip>}</td>
+                  <td className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm whitespace-nowrap text-[10.5px] text-gray-400 dark:text-gray-500">{u.val.basis}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </TableWrap>
+        <div className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mt-3">
+          Value is taken at recent registered resale and floored at the circle rate. Your own ask price
+          appears here for internal reference only and never reaches a customer statement — if a project's
+          prices flatten, your own dashboard must not become the buyer's evidence against you.
+        </div>
+      </Card>
+    </>
+  );
+}

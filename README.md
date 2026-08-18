@@ -6,12 +6,25 @@ can be extended and wired to an API.
 
 ## Run it
 
+The app is split into two fully independent projects — `frontend/` (React + Vite) and
+`backend/` (Node + Express + MongoDB) — each with its own `package.json`/`node_modules`.
+There is no root-level `package.json`; install and run each one from inside its own
+folder. MongoDB must be running locally (`mongodb://localhost:27017` by default, see
+`backend/.env`).
+
 ```bash
-npm install
-npm run dev      # http://localhost:5173
-npm run build    # production bundle into dist/
+cd backend && npm install && npm run seed   # one-time: install + populate MongoDB (240 owners)
+npm run dev                                 # backend on :4000 (leave running)
+```
+
+```bash
+cd frontend && npm install
+npm run dev      # http://localhost:5173 — proxies /api to :4000
+npm run build    # production bundle into frontend/dist/
 npm run preview  # serve the built bundle
 ```
+
+Run both `npm run dev` commands at the same time, in two terminals.
 
 ## What it does
 
@@ -41,7 +54,7 @@ much of it is locked up*:
 
 - **Segment tiles carry money**, not just headcount — Segment A is 39 owners holding
   ₹20.2 Cr.
-- **Where the value sits** ([src/components/ValueByProject.jsx](src/components/ValueByProject.jsx))
+- **Where the value sits** ([frontend/src/components/ValueByProject.jsx](frontend/src/components/ValueByProject.jsx))
   — unrealised gain per project as a horizontal stacked bar, split into reachable now
   vs behind the gate. Hover any row for the breakdown; "Show table" gives the same
   numbers as a table. It makes the stale-valuation problem visible at a glance: The
@@ -66,7 +79,7 @@ the card ships a table view — both are required relief, not decoration.
 ## The two rules that matter
 
 **The contact gate runs before the score.** `GATE_ORDER` in
-[src/lib/derived.js](src/lib/derived.js) is evaluated in strict order, first match wins:
+[frontend/src/lib/derived.js](frontend/src/lib/derived.js) is evaluated in strict order, first match wins:
 exited → transfer in progress → litigation → open complaint → no marketing consent →
 stale valuation. Any hit forces Segment C and suppresses all outbound, whatever the score
 says. The gate returns a machine-readable code so a send layer can enforce it
@@ -78,37 +91,49 @@ older than 90 days automatically holds every owner in that project out of all ou
 ## Structure
 
 ```
-src/
-  lib/
-    core.js         clock, seeded PRNG, formatters, projects, festivals
-    generator.js    synthetic sample base (240 owners) — replace with your API
-    derived.js      position maths, contact gate, confidence, score, segments, triggers
-    intake.js       import checks, exceptions queue, form validation, record builder
-    reference.js    field dictionary and access matrix (static tables)
-  context/
-    AppContext.jsx  the single store: raw base + weights in, enriched base out
-  components/       Ui.jsx primitives, Sidebar, RateLadder
-  views/            one file per screen; views/master/* for the eight master tabs
-  styles.css        unchanged from the prototype
+frontend/
+  src/
+    lib/
+      core.js         clock, seeded PRNG, formatters, projects, festivals
+      generator.js    synthetic sample base (240 owners) — also copied into backend/ for seeding
+      derived.js      position maths, contact gate, confidence, score, segments, triggers
+      intake.js       client-side form validation (exceptions queue, live-add form)
+      reference.js    field dictionary and access matrix (static tables)
+    context/
+      AppContext.jsx  fetches the raw base from the API; enrich(raw, weights) stays client-side
+    components/       Ui.jsx primitives, Sidebar, RateLadder, ThemedSelect
+    views/            one file per screen; views/master/* for the eight master tabs
+    index.css         Tailwind entry (dark mode, custom scrollbars, print rules)
+  index.html, vite.config.js, tailwind.config.js, postcss.config.js
+
+backend/
+  src/
+    lib/
+      core.js, generator.js   own copies of the frontend's (used only for seeding)
+      gate.js, validate.js    server-authoritative ports of the contact gate + intake checks
+    models/           Mongoose schemas: Customer, Project, Counter
+    routes/           customers.js, projects.js
+    index.js          Express app entrypoint
+  seed.js             one-shot idempotent seed script
+  .env                MONGODB_URI, PORT
 ```
 
 ### State
 
-`AppContext` holds the raw base and the four weights. Everything derived —
-score, segment, gate, gain, data confidence — is recomputed by `enrich(raw, weights)`
-inside a `useMemo`. Move a weight slider on the Scoring engine and every segment count,
-chip and call list in the app redraws from the same computation. Nothing is cached
-separately, so nothing can drift out of sync.
+`AppContext` fetches the raw base once from `GET /api/customers` on mount. Everything
+derived — score, segment, gate, gain, data confidence — is still recomputed entirely
+client-side by `enrich(raw, weights)` inside a `useMemo`, exactly as before: move a weight
+slider on the Scoring engine and every segment count, chip and call list redraws instantly,
+with no round trip to the server. The one real write path (adding an owner via Intake, and
+now also logging a sent statement from Portfolio statement) goes through the backend, which
+re-validates and re-checks the gate independently of whatever the client already checked.
 
 ### Sample data
 
-`generateBase()` runs once at module load from a fixed seed (`20260810`), so the base is
-identical on every reload and matches the original prototype record for record. The system
-clock is pinned to **10 Aug 2026** via `TODAY` in `core.js`.
-
-To connect real data, replace `RAW_BASE` in [src/lib/generator.js](src/lib/generator.js)
-with a fetch. Nothing else needs to change — every other module reads the shape, not the
-source.
+`backend/seed.js` calls `generateBase()` from a fixed seed (`20260810`) to populate MongoDB
+once with the same 240 owners the in-memory version used to regenerate on every reload. The
+system clock is still pinned to **10 Aug 2026** via `TODAY` in `core.js` (both copies).
+Re-run `npm run seed` any time to reset the database back to that clean sample state.
 
 > One oddity is preserved deliberately: `email: rnd() < 0.7 ? null : null` in the
 > generator always yields `null` but consumes a random draw. Remove it and every

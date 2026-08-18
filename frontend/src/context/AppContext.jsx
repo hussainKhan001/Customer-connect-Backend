@@ -1,0 +1,150 @@
+/* =====================================================================
+   APP STATE — one store for the whole system. The raw base is fetched
+   from the API into state; every derived field is recomputed by
+   enrich() whenever the base or the weights change, so moving a weight
+   redraws the segments everywhere at once — purely client-side, no
+   round trip to the server.
+   ===================================================================== */
+import { createContext, useContext, useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { io } from 'socket.io-client';
+import { enrich, DEFAULT_W } from '../lib/derived.js';
+import { apiFetch, API_BASE } from '../lib/api.js';
+import { useAuth } from './AuthContext.jsx';
+
+const AppContext = createContext(null);
+
+export function AppProvider({ children }) {
+  const { user } = useAuth();
+  const [raw, setRaw] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
+  const [live, setLive] = useState(false);
+  const [weights, setWeights] = useState(DEFAULT_W);
+
+  const fetchCustomers = useCallback(({ silent = false } = {}) => {
+    if (!silent) setLoading(true);
+    return apiFetch('/api/customers')
+      .then((r) => {
+        if (!r.ok) throw new Error(`API returned ${r.status}`);
+        return r.json();
+      })
+      .then((data) => { setRaw(data); setLoadError(null); })
+      .catch((err) => { if (!silent) setLoadError(err.message); })
+      .finally(() => { if (!silent) setLoading(false); });
+  }, []);
+
+  /* nothing to fetch (and no point holding a live socket open) until
+     there's a signed-in session — see AuthContext.jsx */
+  useEffect(() => {
+    if (user) fetchCustomers();
+    else setLoading(false);
+  }, [user, fetchCustomers]);
+
+  /* live sync: MongoDB Change Streams (see backend/src/index.js) push a
+     'customers:changed' event on every insert/update/delete — whether
+     it came from this app, a teammate's tab, or someone editing
+     directly in Compass. Debounced because a seed run fires one event
+     per document, and a single refetch covers all of them. */
+  const refetchTimer = useRef(null);
+  useEffect(() => {
+    if (!user) return undefined;
+    const socket = io(API_BASE || undefined, { transports: ['websocket', 'polling'], withCredentials: true });
+    socket.on('connect', () => setLive(true));
+    socket.on('disconnect', () => setLive(false));
+    socket.on('customers:changed', () => {
+      clearTimeout(refetchTimer.current);
+      refetchTimer.current = setTimeout(() => fetchCustomers({ silent: true }), 400);
+    });
+    return () => {
+      clearTimeout(refetchTimer.current);
+      socket.disconnect();
+    };
+  }, [user, fetchCustomers]);
+
+  const [view, setViewRaw] = useState('command');
+  const [cid, setCid] = useState(null);
+  const [tab, setTab] = useState('overview');
+  const [sort, setSort] = useState({ k: '_total', dir: -1 });
+  const [filters, setFilters] = useState({ seg: '', proj: '', ent: '', q: '', status: '' });
+  const [stmtId, setStmtId] = useState(null);
+
+  /* the only expensive computation in the app — memoised on its inputs */
+  const base = useMemo(() => enrich(raw, weights), [raw, weights]);
+  const byId = useCallback((id) => base.find((c) => c.id === id), [base]);
+
+  const setView = useCallback((v) => {
+    setViewRaw(v);
+    if (typeof window !== 'undefined') window.scrollTo(0, 0);
+  }, []);
+
+  /* click any owner anywhere → open their master record */
+  const openCustomer = useCallback((id) => {
+    setCid(id);
+    setTab('overview');
+    setView('master');
+  }, [setView]);
+
+  /* jump from a segment tile to the filtered owner base */
+  const openSegment = useCallback((seg) => {
+    setFilters((f) => ({ ...f, seg }));
+    setView('base');
+  }, [setView]);
+
+  const openStatement = useCallback((id) => {
+    setStmtId(id);
+    setView('statement');
+  }, [setView]);
+
+  const toggleSort = useCallback((k) => {
+    setSort((s) => (s.k === k ? { k, dir: -s.dir } : { k, dir: -1 }));
+  }, []);
+
+  const clearFilters = useCallback(() => setFilters({ seg: '', proj: '', ent: '', q: '', status: '' }), []);
+
+  /* posts to the real API; the new record is scored and gated on the
+     next render like any other once it lands in `raw`. Throws with a
+     `.errors` field-map on validation failure (400), for the Intake
+     form to merge into its own error state. */
+  const addCustomer = useCallback(async (draft) => {
+    const res = await apiFetch('/api/customers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(draft),
+    });
+    const body = await res.json();
+    if (!res.ok) {
+      const err = new Error('Validation failed');
+      err.errors = body.errors || {};
+      throw err;
+    }
+    setRaw((prev) => [body, ...prev]);
+    return body;
+  }, []);
+
+  /* replaces one record in `raw` with the server's latest copy of it —
+     used after a write that targets a single customer (e.g. logging a
+     sent statement) so the UI reflects it without a full refetch */
+  const patchCustomer = useCallback((updated) => {
+    setRaw((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+  }, []);
+
+  const value = {
+    base, byId, raw,
+    loading, loadError, live,
+    weights, setWeights,
+    view, setView,
+    cid, setCid, tab, setTab,
+    sort, toggleSort,
+    filters, setFilters, clearFilters,
+    stmtId, setStmtId,
+    openCustomer, openSegment, openStatement, addCustomer, patchCustomer,
+  };
+
+  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+}
+
+export function useApp() {
+  const ctx = useContext(AppContext);
+  if (!ctx) throw new Error('useApp must be used inside <AppProvider>');
+  return ctx;
+}

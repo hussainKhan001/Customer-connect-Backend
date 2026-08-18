@@ -1,0 +1,203 @@
+import { useState } from 'react';
+import { useApp } from '../context/AppContext.jsx';
+import { Card, Chip, Banner, TableWrap, BtnPrimary, btnGhost, confColor } from '../components/Ui.jsx';
+import ThemedSelect from '../components/theme/ThemedSelect.jsx';
+import { PROJECTS } from '../lib/core.js';
+import { CHECKS, FILES, FORM_FIELDS, SAMPLE_DRAFT, exceptions, validateDraft } from '../lib/intake.js';
+
+const EMPTY = Object.fromEntries(FORM_FIELDS.map(([k]) => [k, '']));
+
+const fixOwner = (fails) =>
+  fails.some((f) => ['RATE_AREA', 'PAID_LE_CONSID'].includes(f[0])) ? 'Finance'
+  : fails.some((f) => f[0] === 'VAL_CURRENT') ? 'Finance — valuation'
+  : fails.some((f) => f[0] === 'REG_ON_POSSESSION') ? 'Legal'
+  : 'CRM';
+
+/* shared form-field classes — label / input / error text, per the Nexora form pattern */
+const lblCls = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5';
+const inputCls = (bad) =>
+  `w-full px-3 py-2.5 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${bad ? 'border-red-400' : 'border-gray-300 dark:border-gray-600'}`;
+const errCls = 'text-xs text-red-500 mt-1';
+const tagCls = 'text-[10.5px] font-mono px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300';
+const tdCls = 'px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm';
+const thCls = 'text-left text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 whitespace-nowrap';
+
+export default function Intake() {
+  const { base, addCustomer, openCustomer } = useApp();
+  const [draft, setDraft] = useState(EMPTY);
+  const [errors, setErrors] = useState({});
+
+  const ex = exceptions(base);
+  const byCode = {};
+  ex.forEach((x) => x.fails.forEach(([code]) => { byCode[code] = (byCode[code] || 0) + 1; }));
+
+  const set = (k) => (e) => setDraft((d) => ({ ...d, [k]: e.target.value }));
+  const setVal = (k) => (v) => setDraft((d) => ({ ...d, [k]: v }));
+
+  const [submitting, setSubmitting] = useState(false);
+
+  const submit = async () => {
+    const errs = validateDraft(draft, base);
+    setErrors(errs);
+    if (Object.keys(errs).length) return;
+    setSubmitting(true);
+    try {
+      const c = await addCustomer(draft);
+      setDraft(EMPTY);
+      setErrors({});
+      openCustomer(c.id);
+    } catch (err) {
+      /* server is the source of truth — surface whatever it rejected
+         even if the client-side check above missed it (e.g. a PAN that
+         was just taken by someone else). */
+      setErrors(err.errors || { name: 'Could not save this owner. Please try again.' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <>
+      <Banner kind="info">
+        <b>This is the write path.</b> Three files in, validated on import, with everything that fails held
+        here rather than quietly loaded. A record in this queue cannot be scored, cannot be sent a
+        statement and cannot appear in an outreach list. That is deliberate — the queue is the thing
+        standing between a reconciliation error and a customer's hands.
+      </Banner>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-3.5">
+        {FILES.map(([n, d, cols]) => (
+          <Card key={n} title={n} hint={<span className="tabular-nums">{cols.length} columns</span>}>
+            <div className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mb-2">{d}</div>
+            <div className="flex flex-wrap gap-1">
+              {cols.map((x) => <code key={x} className={tagCls}>{x}</code>)}
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.3fr] gap-4 mb-3.5">
+        <Card title="Add an owner" hint="validated live">
+          {FORM_FIELDS.map(([k, l, t]) => (
+            <div className="mb-3.5" key={k}>
+              <label htmlFor={`fld-${k}`} className={lblCls}>{l}</label>
+              {t === 'select' ? (
+                <ThemedSelect
+                  value={draft[k] ?? ''}
+                  onChange={setVal(k)}
+                  options={PROJECTS.map((p) => ({ value: p.name, label: p.name }))}
+                  placeholder="Choose"
+                  className={errors[k] ? '[&>button]:border-red-400' : ''}
+                />
+              ) : (
+                <input
+                  id={`fld-${k}`}
+                  type={t}
+                  value={draft[k] ?? ''}
+                  onChange={set(k)}
+                  className={inputCls(!!errors[k])}
+                />
+              )}
+              {errors[k] && <div className={errCls}>{errors[k]}</div>}
+            </div>
+          ))}
+          <div className="flex flex-col gap-2 mb-3.5">
+            <BtnPrimary className="w-full" onClick={submit} disabled={submitting}>
+              {submitting ? 'Saving…' : 'Validate and add'}
+            </BtnPrimary>
+            <button
+              className={`${btnGhost} w-full`}
+              disabled={submitting}
+              onClick={() => { setDraft(SAMPLE_DRAFT()); setErrors({}); }}
+            >
+              Fill with a sample row
+            </button>
+          </div>
+          <div className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+            Adding here writes to the database. The record appears in the owner base immediately,
+            scored and gated like any other, and survives a reload.
+          </div>
+        </Card>
+
+        <Card title="Import validation rules" hint="reject, do not guess">
+          <TableWrap>
+            <table className="w-full border-collapse">
+              <tbody>
+                {CHECKS.map(([code, l]) => (
+                  <tr key={code}>
+                    <td className={tdCls}><code className={tagCls}>{code}</code></td>
+                    <td className={tdCls}>{l}</td>
+                    <td className={`${tdCls} text-right`}>
+                      {byCode[code] ? <Chip cls="r">{byCode[code]} failing</Chip> : <Chip cls="g">all clear</Chip>}
+                    </td>
+                  </tr>
+                ))}
+                <tr>
+                  <td className={tdCls}><code className={tagCls}>DEDUPE_PAN</code></td>
+                  <td className={tdCls}>Deduplicate on PAN first, mobile second, never on name</td>
+                  <td className={`${tdCls} text-right`}><Chip cls="g">enforced</Chip></td>
+                </tr>
+                <tr>
+                  <td className={tdCls}><code className={tagCls}>ONE_CUSTOMER_ID</code></td>
+                  <td className={tdCls}>
+                    One customer ID across all three entities — merge candidates surfaced for a human,
+                    never merged silently
+                  </td>
+                  <td className={`${tdCls} text-right`}><Chip cls="g">enforced</Chip></td>
+                </tr>
+              </tbody>
+            </table>
+          </TableWrap>
+          <div className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mt-2.5">
+            Reject rather than guess. A row that does not reconcile is held, not adjusted — the variance
+            between <code className={tagCls}>rate × area</code> and consideration is either an unrecorded discount or an
+            error, and you want to know which before it reaches a customer.
+          </div>
+        </Card>
+      </div>
+
+      <Card
+        title="Exceptions queue"
+        hint={`${ex.length} records held · ${base.length - ex.length} clean`}
+        pad={false}
+      >
+        <TableWrap>
+          <table className="w-full border-collapse">
+            <thead>
+              <tr>
+                <th className={thCls}>Owner</th>
+                <th className={thCls}>Unit</th>
+                <th className={`${thCls} text-right`}>Confidence</th>
+                <th className={thCls}>Failing checks</th>
+                <th className={thCls}>Owner of the fix</th>
+              </tr>
+            </thead>
+            <tbody>
+              {ex.slice(0, 30).map(({ c, fails }) => (
+                <tr
+                  key={c.id}
+                  className="hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors cursor-pointer"
+                  onClick={() => openCustomer(c.id)}
+                >
+                  <td className={tdCls}>
+                    <div className="font-bold text-gray-900 dark:text-white">{c.name}</div>
+                    <div className="text-[10.5px] text-gray-400 dark:text-gray-500">{c.id}</div>
+                  </td>
+                  <td className={tdCls}>
+                    {c._unit}
+                    <div className="text-[10.5px] text-gray-400 dark:text-gray-500">{c._project}</div>
+                  </td>
+                  <td className={`${tdCls} text-right tabular-nums font-semibold ${confColor(c._conf)}`}>{c._conf}%</td>
+                  <td className={tdCls}>
+                    {fails.map(([code]) => <code key={code} className={`${tagCls} mr-1`}>{code}</code>)}
+                  </td>
+                  <td className={`${tdCls} text-[10.5px] text-gray-400 dark:text-gray-500`}>{fixOwner(fails)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </TableWrap>
+      </Card>
+    </>
+  );
+}
