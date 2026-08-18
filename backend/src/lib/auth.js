@@ -27,17 +27,29 @@ export function signToken(user) {
   );
 }
 
+/* In production the frontend and backend live on different domains
+   (cross-site, e.g. a Vercel app calling an onrender.com API) — a
+   cross-site cookie is only ever sent by the browser when it's marked
+   SameSite=None, and browsers require Secure (HTTPS-only) on any
+   SameSite=None cookie. Locally, frontend and backend are both on
+   localhost (same-site), where SameSite=None actually gets rejected by
+   some browsers unless also Secure — but plain HTTP localhost isn't
+   Secure, so dev needs the Lax/insecure pair instead. Same options must
+   be reused for both setting and clearing the cookie, or the browser
+   won't recognize clearCookie's call as targeting the same cookie. */
+const isProd = process.env.NODE_ENV === 'production';
+const cookieOptions = {
+  httpOnly: true,
+  sameSite: isProd ? 'none' : 'lax',
+  secure: isProd,
+};
+
 export function setAuthCookie(res, token) {
-  res.cookie(COOKIE_NAME, token, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 8 * 60 * 60 * 1000,
-  });
+  res.cookie(COOKIE_NAME, token, { ...cookieOptions, maxAge: 8 * 60 * 60 * 1000 });
 }
 
 export function clearAuthCookie(res) {
-  res.clearCookie(COOKIE_NAME);
+  res.clearCookie(COOKIE_NAME, cookieOptions);
 }
 
 /* attaches req.user = { id, email, name, role } from the httpOnly
