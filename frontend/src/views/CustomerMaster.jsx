@@ -1,7 +1,12 @@
+import { useState } from 'react';
+import { Pencil } from 'lucide-react';
 import { useApp } from '../context/AppContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { Card, Chip, Row, KV, Meter, Dot, confMeterCls, btnGhost, BtnPrimary } from '../components/Ui.jsx';
 import ThemedSelect from '../components/theme/ThemedSelect.jsx';
+import EditProfileModal from '../components/EditProfileModal.jsx';
+import StatusModal from '../components/StatusModal.jsx';
+import CallModal from '../components/CallModal.jsx';
 import { initials, inrF, fmtD } from '../lib/core.js';
 import { roll, confidence, STATUSLBL, segDisplay } from '../lib/derived.js';
 
@@ -28,6 +33,9 @@ const TAB_VIEWS = {
 export default function CustomerMaster() {
   const { base, cid, setCid, tab, setTab, weights, openStatement } = useApp();
   const { getThemeColor } = useTheme();
+  const [editOpen, setEditOpen] = useState(false);
+  const [statusOpen, setStatusOpen] = useState(false);
+  const [callOpen, setCallOpen] = useState(false);
 
   /* land on the strongest Segment A record when nobody has been picked */
   const current = base.find((c) => c.id === cid) || base.find((c) => c._seg === 'A') || base[0];
@@ -55,7 +63,14 @@ export default function CustomerMaster() {
             <h1 className="text-xl font-bold text-gray-900 dark:text-white truncate">{c.salutation} {c.name}</h1>
             <div className="flex flex-wrap gap-1.5 mt-1.5">
               <Chip cls={sd.cls}>{sd.t}</Chip>
-              <Chip cls={c.status === 'ACTIVE' ? 'g' : 'r'}>{STATUSLBL[c.status]}</Chip>
+              <button
+                onClick={() => setStatusOpen(true)}
+                className="inline-flex items-center gap-1 group"
+                title="Change owner status"
+              >
+                <Chip cls={c.status === 'ACTIVE' ? 'g' : 'r'}>{STATUSLBL[c.status]}</Chip>
+                <Pencil className="w-3 h-3 text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors" />
+              </button>
               {g.open ? <Chip cls="g">contact open</Chip> : <Chip cls="r">gate closed</Chip>}
               {c._live > 1 && <Chip cls="k">{c._live} units</Chip>}
               <Chip cls={cf.pct >= 80 ? 'g' : cf.pct >= 60 ? 'w' : 'r'}>data confidence {cf.pct}%</Chip>
@@ -101,9 +116,15 @@ export default function CustomerMaster() {
       </div>
 
       <div className="flex flex-col lg:flex-row gap-4 items-start">
-        <div className="w-full lg:w-[300px] flex-shrink-0"><Rail c={c} cf={cf} weights={weights} onStatement={() => openStatement(c.id)} /></div>
+        <div className="w-full lg:w-[300px] flex-shrink-0">
+          <Rail c={c} cf={cf} weights={weights} onStatement={() => openStatement(c.id)} onEditProfile={() => setEditOpen(true)} onLogCall={() => setCallOpen(true)} />
+        </div>
         <div className="flex-1 min-w-0"><Tab c={c} /></div>
       </div>
+
+      {editOpen && <EditProfileModal customer={c} onClose={() => setEditOpen(false)} />}
+      {statusOpen && <StatusModal customer={c} onClose={() => setStatusOpen(false)} />}
+      {callOpen && <CallModal customer={c} onClose={() => setCallOpen(false)} />}
     </>
   );
 }
@@ -117,7 +138,7 @@ const Strip = ({ label, v, tone }) => (
   </div>
 );
 
-function Rail({ c, cf, weights, onStatement }) {
+function Rail({ c, cf, weights, onStatement, onEditProfile, onLogCall }) {
   const g = c._g;
   const s = c._s;
   const miss = [
@@ -183,8 +204,8 @@ function Rail({ c, cf, weights, onStatement }) {
           Generate portfolio statement
         </BtnPrimary>
         <button className={`${btnGhost} w-full mb-1.5`} disabled={!g.open}>Add to launch invite list</button>
-        <button className={`${btnGhost} w-full mb-1.5`}>Log a call</button>
-        <button className={`${btnGhost} w-full`}>Request profile update</button>
+        <button className={`${btnGhost} w-full mb-1.5`} onClick={onLogCall}>Log a call</button>
+        <button className={`${btnGhost} w-full`} onClick={onEditProfile}>Complete profile</button>
         {!g.open && (
           <div className="text-xs text-red-600 dark:text-red-400 leading-relaxed mt-2">
             Outbound disabled by the gate — enforced at send time as well as here.

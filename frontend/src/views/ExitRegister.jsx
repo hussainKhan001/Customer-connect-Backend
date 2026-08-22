@@ -15,14 +15,13 @@ const sub2 = 'text-[10.5px] text-gray-400 dark:text-gray-500';
 export default function ExitRegister() {
   const { base, openCustomer } = useApp();
 
-  const ex = base.filter((c) => c.status === 'EXITED');
-  const rows = ex.map((c) => {
-    const u = c.units.find((x) => x.exited);
+  const rows = base.flatMap((c) => c.units.filter((x) => x.exited).map((u) => {
     const uc = unitCalc(u);
     const askValue = u.saleable * projByName(u.project).resale;
     const soldValue = u.saleable * u.exitRate;
     return { c, u: uc, soldValue, askValue, gap: askValue - soldValue, comm: soldValue * COMMISSION };
-  });
+  }));
+  const ownersExited = new Set(rows.map((r) => r.c.id)).size;
 
   const totComm = rows.reduce((s, r) => s + r.comm, 0);
   const totGap = rows.reduce((s, r) => s + r.gap, 0);
@@ -32,7 +31,7 @@ export default function ExitRegister() {
   return (
     <>
       <Kpis>
-        <Kpi label="Owners who exited" value={ex.length} tone="r" icon={LogOut} sub="sold without you" />
+        <Kpi label="Owners who exited" value={ownersExited} tone="r" icon={LogOut} sub="sold without you" />
         <Kpi label="Value transacted" value={`₹${cr(totSold).toFixed(2)} Cr`} icon={Banknote} sub="in your own projects" />
         <Kpi label="Commission foregone" value={inr(totComm)} tone="o" icon={Percent} sub="at 2% — the cost of no resale desk" />
         <Kpi label="Sold below your assessed value" value={inr(totGap)} icon={TrendingDown} sub="the discount a broker sale costs your customer" />
@@ -58,7 +57,7 @@ export default function ExitRegister() {
             </thead>
             <tbody>
               {rows.map(({ c, u, comm }) => (
-                <tr key={c.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors cursor-pointer" onClick={() => openCustomer(c.id)}>
+                <tr key={`${c.id}-${u.unit}`} className="hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors cursor-pointer" onClick={() => openCustomer(c.id)}>
                   <td className={td}>
                     <div className="font-bold text-gray-900 dark:text-white">{c.name}</div>
                     <div className={sub2}>{c.id} · {c.city}</div>

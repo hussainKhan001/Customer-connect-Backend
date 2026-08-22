@@ -1,15 +1,48 @@
-import { Card, Chip, Banner, Row, KV, Timeline } from '../../components/Ui.jsx';
+import Swal from 'sweetalert2';
+import { Card, Chip, Banner, Row, KV, Timeline, btnGhost } from '../../components/Ui.jsx';
+import { useApp } from '../../context/AppContext.jsx';
 import { fmtD } from '../../lib/core.js';
 import { GATE_ORDER } from '../../lib/derived.js';
+import { toast } from '../../lib/toast.js';
 
 const YN = ({ on }) => (on ? <Chip cls="g">yes</Chip> : <Chip cls="m">no</Chip>);
 
 export default function MGovernance({ c }) {
+  const { mutateCustomer } = useApp();
   const g = c._g;
   const cs = c.consent;
 
+  const toggleLitigation = async () => {
+    const turningOn = !c.litigation;
+    const result = await Swal.fire({
+      icon: 'warning',
+      title: turningOn ? 'Flag litigation?' : 'Clear litigation flag?',
+      text: turningOn
+        ? 'This immediately closes the contact gate — no marketing, no statements, no outbound of any kind until Legal clears it.'
+        : 'This reopens contact for this owner — confirm the litigation is actually resolved before clearing it.',
+      showCancelButton: true,
+      confirmButtonText: turningOn ? 'Flag it' : 'Clear it',
+    });
+    if (!result.isConfirmed) return;
+    try {
+      await mutateCustomer(`/api/customers/${c.id}/litigation`, { litigation: turningOn });
+      toast.success('Litigation flag updated', turningOn ? 'Contact gate closed.' : 'Contact gate re-evaluated.');
+    } catch {
+      toast.error('Could not save', 'Try again.');
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <Card title="Legal">
+        <KV>
+          <Row k="Litigation flag" v={c.litigation ? <Chip cls="r">flagged — hard block</Chip> : <Chip cls="g">clear</Chip>} />
+        </KV>
+        <button className={`${btnGhost} w-full mt-2.5`} onClick={toggleLitigation}>
+          {c.litigation ? 'Clear litigation flag' : 'Flag litigation'}
+        </button>
+      </Card>
+
       <Card title="Consent — DPDP">
         <KV>
           <Row k="WhatsApp" v={<YN on={cs.whatsapp} />} />

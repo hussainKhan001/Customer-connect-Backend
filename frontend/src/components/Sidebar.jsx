@@ -6,7 +6,7 @@ import { triggerList } from '../lib/derived.js';
 import { exceptions } from '../lib/intake.js';
 import {
   LayoutDashboard, Users, IdCard, CalendarClock, GitBranch, FileText, Send,
-  Inbox, ClipboardList, LogOut, SlidersHorizontal, BookOpen, ShieldCheck, X,
+  Inbox, ClipboardList, LogOut, SlidersHorizontal, BookOpen, ShieldCheck, UserCog, FileWarning, X,
 } from 'lucide-react';
 
 export const NAV = [
@@ -18,15 +18,17 @@ export const NAV = [
   ['Act', 'statement', 'Portfolio statement', FileText],
   ['Act', 'sendlog', 'Statement send log', Send],
   ['Data', 'intake', 'Intake & exceptions', Inbox],
+  ['Data', 'incomplete', 'Incomplete records', FileWarning],
   ['Data', 'valuation', 'Valuation register', ClipboardList],
   ['Data', 'exits', 'Exit register', LogOut],
   ['Build', 'engine', 'Scoring engine', SlidersHorizontal],
   ['Build', 'dict', 'Field dictionary', BookOpen],
   ['Build', 'access', 'Access & governance', ShieldCheck],
+  ['Build', 'users', 'User management', UserCog],
 ];
 
 export default function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }) {
-  const { base, view, setView } = useApp();
+  const { base, incompleteRecords, view, setView } = useApp();
   const { getThemeColor } = useTheme();
 
   const ex = exceptions(base).length;
@@ -35,10 +37,11 @@ export default function Sidebar({ mobileOpen = false, onCloseMobile, collapsed =
     base: base.length,
     triggers: triggerList(base).length,
     intake: ex || '',
+    incomplete: incompleteRecords.length || '',
     valuation: stale || '',
     exits: base.filter((c) => c.status === 'EXITED').length,
   };
-  const alerts = { intake: !!ex, valuation: !!stale };
+  const alerts = { intake: !!ex, incomplete: !!incompleteRecords.length, valuation: !!stale };
 
   let lastGroup = null;
 

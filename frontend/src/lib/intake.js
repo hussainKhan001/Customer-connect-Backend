@@ -56,6 +56,49 @@ export const FORM_FIELDS = [
   ['paid', 'Received to date', 'number'],
 ];
 
+/* The bulk-import sheet's full column set — everything about an owner
+   that is genuinely "one value per person" (identity, KYC, consent,
+   co-applicant, occupation, address) plus the fields needed to create
+   their first unit. Deliberately NOT included: loan/valuation detail,
+   complaints, referrals, events, calls, NPS — those are per-unit or
+   repeating records (an owner can have several), so they don't fit a
+   flat one-row-per-owner sheet and are entered later from Customer
+   Master as they happen, not pre-populated in bulk. This list drives
+   only the Excel template/import (see excel.js) — the quick single-
+   owner form still uses the shorter FORM_FIELDS above unchanged. */
+export const FULL_FORM_FIELDS = [
+  ['name', 'Full name', 'text'],
+  ['pan', 'PAN', 'text'],
+  ['mobile', 'Mobile', 'text'],
+  ['email', 'Email', 'text'],
+  ['salutation', 'Salutation', 'text'],
+  ['dob', 'Date of birth', 'date'],
+  ['spouseDob', 'Anniversary', 'date'],
+  ['coApplicant', 'Co-applicant name', 'text'],
+  ['coRelation', 'Co-applicant relation', 'text'],
+  ['coOnAgreement', 'Co-applicant on agreement (Yes/No)', 'text'],
+  ['kycDate', 'KYC completed date', 'date'],
+  ['corrAddr', 'Current address', 'text'],
+  ['city', 'City', 'text'],
+  ['occupation', 'Occupation', 'text'],
+  ['community', 'Community', 'text'],
+  ['source', 'Came to us via', 'text'],
+  ['consentWhatsapp', 'WhatsApp consent (Yes/No)', 'text'],
+  ['consentSms', 'SMS consent (Yes/No)', 'text'],
+  ['consentEmail', 'Email consent (Yes/No)', 'text'],
+  ['consentMarketing', 'Marketing consent (Yes/No)', 'text'],
+  ['consentChildren', "Children's data consent (Yes/No)", 'text'],
+  ['consentPurpose', 'Consent purpose', 'text'],
+  ['project', 'Project', 'select'],
+  ['unit', 'Unit number', 'text'],
+  ['saleable', 'Saleable sq.ft.', 'number'],
+  ['rate', 'Booking rate per sq.ft.', 'number'],
+  ['discount', 'Discount', 'number'],
+  ['consideration', 'Total consideration', 'number'],
+  ['bookDate', 'Booking date', 'date'],
+  ['paid', 'Received to date', 'number'],
+];
+
 export const SAMPLE_DRAFT = () => {
   const p = PROJECTS[0], sa = 1250, rt = 2000, dc = 0;
   return {
@@ -77,7 +120,7 @@ export function validateDraft(d, base = []) {
   }
 
   if (!/^\+?[0-9\s]{10,14}$/.test(d.mobile || '')) e.mobile = 'Enter a 10-digit mobile — the secondary dedupe key.';
-  if (!d.project) e.project = 'Choose the project so the valuation note can be attached.';
+  if (!d.project || !projByName(d.project)) e.project = 'Choose the project so the valuation note can be attached.';
   if (!d.unit) e.unit = 'Unit number is required.';
 
   const sa = +d.saleable, rt = +d.rate, dc = +d.discount || 0, co = +d.consideration, pd = +d.paid;
@@ -92,6 +135,48 @@ export function validateDraft(d, base = []) {
   else if (new Date(d.bookDate) > TODAY) e.bookDate = 'Booking date cannot be in the future.';
   if (!(pd >= 0)) e.paid = 'Received to date is required — enter 0 if nothing has been received.';
   else if (co > 0 && pd > co + 1) e.paid = 'Received exceeds consideration by ' + inrF(pd - co) + '. Rejected, not adjusted.';
+
+  return e;
+}
+
+/* Client-side mirror of backend/src/lib/validateIncomplete.js's
+   validateShellDraft — for the "import as incomplete records" bulk
+   path (see Intake.jsx), where only name/mobile/project/unit are
+   mandatory and PAN/financials are optional-but-validated-if-present.
+   The server re-validates independently either way. */
+export function validateShellDraft(d, base = []) {
+  const e = {};
+  if (!d.name || d.name.trim().length < 3) e.name = 'Enter the full name as it appears on the agreement.';
+  if (!/^\+?[0-9\s]{10,14}$/.test(d.mobile || '')) e.mobile = 'Enter a 10-digit mobile.';
+  if (!d.project || !projByName(d.project)) e.project = 'Choose the project so the valuation note can be attached.';
+  if (!d.unit) e.unit = 'Unit number is required.';
+
+  const pan = (d.pan || '').replace(/\s/g, '');
+  if (pan) {
+    if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/i.test(pan)) {
+      e.pan = 'PAN must be 5 letters, 4 digits, 1 letter, or leave it blank until known.';
+    } else if (base.some((c) => c.pan && c.pan.toUpperCase() === pan.toUpperCase())) {
+      e.pan = 'Duplicate PAN — this owner already exists. Deduplicate on PAN first, never on name.';
+    }
+  }
+
+  const sa = d.saleable !== undefined && d.saleable !== '' ? +d.saleable : null;
+  const rt = d.rate !== undefined && d.rate !== '' ? +d.rate : null;
+  const dc = +d.discount || 0;
+  const co = d.consideration !== undefined && d.consideration !== '' ? +d.consideration : null;
+  const pd = d.paid !== undefined && d.paid !== '' ? +d.paid : null;
+
+  if (sa !== null && !(sa > 0)) e.saleable = 'Saleable area must be a positive number, or leave it blank.';
+  if (rt !== null && !(rt > 0)) e.rate = 'Booking rate must be a positive number, or leave it blank.';
+  if (co !== null && !(co > 0)) e.consideration = 'Consideration must be a positive number, or leave it blank.';
+  if (sa !== null && rt !== null && co !== null && Math.abs(rt * sa - dc - co) > 1) {
+    e.consideration = 'Does not reconcile with rate × area − discount. Leave consideration blank rather than guess it.';
+  }
+  if (d.bookDate) {
+    if (Number.isNaN(new Date(d.bookDate).getTime())) e.bookDate = 'Enter a valid date, or leave it blank.';
+    else if (new Date(d.bookDate) > TODAY) e.bookDate = 'Booking date cannot be in the future.';
+  }
+  if (pd !== null && !(pd >= 0)) e.paid = 'Received to date must be zero or more, or leave it blank.';
 
   return e;
 }

@@ -1,9 +1,17 @@
-import { Card, Chip, TableWrap } from '../../components/Ui.jsx';
+import { useState } from 'react';
+import { Pencil } from 'lucide-react';
+import { Card, Chip, TableWrap, rowActionCls } from '../../components/Ui.jsx';
+import ValuationModal from '../../components/ValuationModal.jsx';
+import ExitModal from '../../components/ExitModal.jsx';
+import MilestonesModal from '../../components/MilestonesModal.jsx';
 import { fmtD, inr, inrF, psf } from '../../lib/core.js';
 import { roll } from '../../lib/derived.js';
 
 export default function MPortfolio({ c }) {
   const r = roll(c);
+  const [valIdx, setValIdx] = useState(null);
+  const [exitIdx, setExitIdx] = useState(null);
+  const [milestoneIdx, setMilestoneIdx] = useState(null);
 
   return (
     <>
@@ -24,7 +32,7 @@ export default function MPortfolio({ c }) {
               </tr>
             </thead>
             <tbody>
-              {r.all.map((u) => (
+              {r.all.map((u, idx) => (
                 <tr key={u.unit} className={u.exited ? 'bg-red-50/40 dark:bg-red-900/10' : undefined}>
                   <td className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm whitespace-nowrap">
                     <b>{u.unit}</b>
@@ -35,6 +43,9 @@ export default function MPortfolio({ c }) {
                     Agreement {fmtD(u.agrDate)}<br />
                     Registry {u.regDate ? fmtD(u.regDate) : <span className="text-amber-600 dark:text-amber-400">pending</span>}<br />
                     Possession {u.possDate ? fmtD(u.possDate) : <span className="text-amber-600 dark:text-amber-400">pending</span>}
+                    <button className={`${rowActionCls('primary')} mt-1.5`} onClick={() => setMilestoneIdx(idx)}>
+                      <Pencil className="w-3 h-3" />Edit dates
+                    </button>
                   </td>
                   <td className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm whitespace-nowrap text-right tabular-nums">
                     {u.saleable}
@@ -62,6 +73,11 @@ export default function MPortfolio({ c }) {
                       : u.valStale ? <Chip cls="w">valuation stale</Chip>
                       : u.regDate ? <Chip cls="g">registered</Chip>
                       : <Chip cls="w">registry pending</Chip>}
+                    {!u.exited && (
+                      <button className={`${rowActionCls('red')} mt-1.5`} onClick={() => setExitIdx(idx)}>
+                        Mark exited
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -92,10 +108,11 @@ export default function MPortfolio({ c }) {
                 <th className="text-right text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 whitespace-nowrap">We use</th>
                 <th className="text-left text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 whitespace-nowrap">Note dated</th>
                 <th className="text-left text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 whitespace-nowrap">Basis</th>
+                <th className="text-right text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 whitespace-nowrap" />
               </tr>
             </thead>
             <tbody>
-              {r.all.map((u) => (
+              {r.all.map((u, idx) => (
                 <tr key={u.unit}>
                   <td className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm whitespace-nowrap">{u.project}</td>
                   <td className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm whitespace-nowrap text-right tabular-nums text-[10.5px] text-gray-400 dark:text-gray-500">{psf(u.val.ask)}</td>
@@ -104,6 +121,9 @@ export default function MPortfolio({ c }) {
                   <td className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm whitespace-nowrap text-right tabular-nums"><b>{psf(u.valueRate)}</b></td>
                   <td className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm whitespace-nowrap">{fmtD(u.val.notedOn)} {u.valStale && <Chip cls="r">stale</Chip>}</td>
                   <td className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm whitespace-nowrap text-[10.5px] text-gray-400 dark:text-gray-500">{u.val.basis}</td>
+                  <td className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm whitespace-nowrap text-right">
+                    <button className={rowActionCls('primary')} onClick={() => setValIdx(idx)}>Edit</button>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -115,6 +135,16 @@ export default function MPortfolio({ c }) {
           prices flatten, your own dashboard must not become the buyer's evidence against you.
         </div>
       </Card>
+
+      {valIdx !== null && (
+        <ValuationModal customer={c} unit={r.all[valIdx]} unitIndex={valIdx} onClose={() => setValIdx(null)} />
+      )}
+      {exitIdx !== null && (
+        <ExitModal customer={c} unit={r.all[exitIdx]} unitIndex={exitIdx} onClose={() => setExitIdx(null)} />
+      )}
+      {milestoneIdx !== null && (
+        <MilestonesModal customer={c} unit={r.all[milestoneIdx]} unitIndex={milestoneIdx} onClose={() => setMilestoneIdx(null)} />
+      )}
     </>
   );
 }

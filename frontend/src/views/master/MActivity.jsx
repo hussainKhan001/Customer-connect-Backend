@@ -5,7 +5,7 @@ import { activityFor } from '../../lib/derived.js';
 const tone = (w) =>
   w === 'System' ? 'k'
   : w === 'Service' || w === 'Legal' ? 'r'
-  : w === 'Referral' || w === 'Event' || w === 'Statement' ? 'o'
+  : w === 'Referral' || w === 'Event' || w === 'Statement' || w === 'Call' ? 'o'
   : 'm';
 
 export default function MActivity({ c }) {

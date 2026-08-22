@@ -20,6 +20,21 @@ export const fmtD = (d) =>
 export const fmtDM = (d) =>
   d ? D(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) : null;
 export const addD = (d, n) => { const x = new Date(D(d)); x.setDate(x.getDate() + n); return x; };
+/* "YYYY-MM-DD" for TODAY, using its local date components rather than
+   .toISOString() — TODAY is built via new Date(year, month, day), i.e.
+   local midnight, and toISOString() converts to UTC first, which rolls
+   the date back a day in any timezone ahead of UTC (e.g. IST). Every
+   "default this date field to today" spot must use this, not
+   TODAY.toISOString().slice(0, 10). */
+export const todayInput = () => {
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${TODAY.getFullYear()}-${pad(TODAY.getMonth() + 1)}-${pad(TODAY.getDate())}`;
+};
+/* "YYYY-MM-DD" for a stored date value, for pre-filling a date input.
+   Safe to round-trip through .toISOString() here (unlike TODAY above)
+   because a stored value already came from parsing a date-only string
+   (UTC midnight), so converting back to UTC doesn't shift it. */
+export const toDateInput = (v) => (v ? new Date(v).toISOString().slice(0, 10) : '');
 export const daysTo = (d) => Math.round((D(d) - TODAY) / 86400000);
 export const yrs = (a, b) => (D(b) - D(a)) / 31557600000;
 export const annivIn = (d) => {

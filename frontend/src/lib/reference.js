@@ -78,7 +78,15 @@ export const PERMS = [
   ['Export the base', ['F', 'S', 'N', 'N', 'N', 'N', 'N', 'S', 'N']],
   ['Change the valuation note', ['S', 'N', 'N', 'N', 'N', 'N', 'N', 'F', 'N']],
   ['Override the contact gate', ['N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N']],
+  ['Owner status and transfer state', ['F', 'S', 'N', 'N', 'N', 'F', 'N', 'N', 'S']],
+  ['Engagement data — NPS, referrals, events, visits', ['F', 'F', 'F', 'S', 'O', 'F', 'N', 'N', 'N']],
+  ['User management — add/edit/deactivate accounts', ['F', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N']],
 ];
+
+/* the one row no per-user override is ever allowed to touch — see the
+   same constant in backend/src/lib/permissions.js. */
+export const NON_OVERRIDABLE = 'Override the contact gate';
+
 export const PERM_LABEL = {
   F: { cls: 'yes', t: 'full' },
   S: { cls: 'part', t: 'own scope' },

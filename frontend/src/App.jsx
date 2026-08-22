@@ -21,6 +21,8 @@ import ExitRegister from './views/ExitRegister.jsx';
 import ScoringEngine from './views/ScoringEngine.jsx';
 import FieldDictionary from './views/FieldDictionary.jsx';
 import AccessGovernance from './views/AccessGovernance.jsx';
+import UserManagement from './views/UserManagement.jsx';
+import IncompleteRecords from './views/IncompleteRecords.jsx';
 
 const META = {
   command: ['Command centre', 'Who is ready to re-invest, who must not be touched, and what the base is worth today.'],
@@ -31,11 +33,13 @@ const META = {
   statement: ['Portfolio statement', 'The one page you send every owner. Loyalty product, data-capture mechanism and re-investment pitch in a single sheet.'],
   sendlog: ['Statement send log', 'Every statement ever sent, what it produced, and what it cost you in disputes.'],
   intake: ['Intake & exceptions', 'The write path. Three files in, validated, with everything that fails held in an exceptions queue.'],
+  incomplete: ['Incomplete records', "Owners imported from a raw allotment list, with no PAN or confirmed financials yet — held out of the owner base until completed."],
   valuation: ['Valuation register', 'The signed monthly note behind every gain figure. Without this, your appreciation numbers are indefensible.'],
   exits: ['Exit register', 'Owners who sold without you. The running cost of not having a resale desk.'],
   engine: ['Scoring engine', 'Move the weights and watch the segments redraw. Nothing here is a black box.'],
   dict: ['Field dictionary', 'Every field the system reads or writes, with the named person accountable for capturing it.'],
   access: ['Access & governance', 'Who sees what, what is PII, how long it is kept, and what the customer can ask you to delete.'],
+  users: ['User management', 'Add accounts and assign roles. Access itself is always decided by the role, never by the individual.'],
 };
 
 const VIEWS = {
@@ -47,11 +51,13 @@ const VIEWS = {
   statement: PortfolioStatement,
   sendlog: SendLog,
   intake: Intake,
+  incomplete: IncompleteRecords,
   valuation: ValuationRegister,
   exits: ExitRegister,
   engine: ScoringEngine,
   dict: FieldDictionary,
   access: AccessGovernance,
+  users: UserManagement,
 };
 
 export default function App() {

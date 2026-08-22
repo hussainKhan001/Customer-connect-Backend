@@ -1,15 +1,27 @@
-import { Card, Chip, Row, KV } from '../../components/Ui.jsx';
+import { useState } from 'react';
+import { Card, Chip, Row, KV, rowActionCls } from '../../components/Ui.jsx';
+import LoanModal from '../../components/LoanModal.jsx';
 import { fmtD, inrF } from '../../lib/core.js';
 import { roll } from '../../lib/derived.js';
 
 export default function MLedger({ c }) {
-  return roll(c).all.map((u) => {
+  const [editIdx, setEditIdx] = useState(null);
+  const units = roll(c).all;
+
+  return (
+    <>
+      {units.map((u, idx) => {
     const reconciles = Math.abs(u.rate * u.saleable - u.discount - u.consideration) < 1;
     return (
       <Card
         key={u.unit}
         title={`${u.unit} — payment ledger`}
-        hint={`${u.receipts} receipts${u.bounced ? ' · ' + u.bounced + ' returned' : ''}`}
+        hint={
+          <span className="flex items-center gap-2">
+            {`${u.receipts} receipts${u.bounced ? ' · ' + u.bounced + ' returned' : ''}`}
+            <button className={rowActionCls('primary')} onClick={() => setEditIdx(idx)}>Edit loan</button>
+          </span>
+        }
       >
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <KV>
@@ -44,5 +56,11 @@ export default function MLedger({ c }) {
         </div>
       </Card>
     );
-  });
+      })}
+
+      {editIdx !== null && (
+        <LoanModal customer={c} unit={units[editIdx]} unitIndex={editIdx} onClose={() => setEditIdx(null)} />
+      )}
+    </>
+  );
 }

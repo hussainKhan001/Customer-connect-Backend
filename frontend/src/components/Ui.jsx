@@ -159,6 +159,29 @@ export const healthMeterCls = (p) => (p >= 60 ? 'g' : p >= 40 ? 'o' : 'r');
 export const btnBase = 'rounded-xl text-sm font-medium transition-all duration-200 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed';
 export const btnGhost = `${btnBase} bg-gray-100 dark:bg-gray-700/60 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 px-4 py-2`;
 
+/* Shared field classes for every Modal-based form (label / input / error
+   text / checkbox) — one definition so the growing set of operational
+   edit modals (Status/Complaint/Loan/Valuation/Referral/Event/Exit)
+   don't each redeclare the same Tailwind strings. Named distinctly from
+   Intake.jsx's own separately-scoped local consts of similar names. */
+export const formLabelCls = 'block text-xs font-semibold text-gray-600 dark:text-gray-300 mb-1';
+export const formInputCls = (bad) =>
+  `w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${bad ? 'border-red-400' : 'border-gray-300 dark:border-gray-600'}`;
+export const formErrorCls = 'text-xs text-red-500 mt-1';
+export const formCheckCls = 'w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-primary-600 focus:ring-primary-500';
+
+/* Compact pill button for row-level actions inside tables/cards (Edit,
+   Add, Close, Exit, +1 visit, etc.) — a real button (background, hover
+   state) rather than a bare uppercase text link, so it reads as
+   clickable at a glance instead of blending into surrounding labels. */
+const ROW_ACTION_TONE = {
+  primary: 'bg-primary-50 text-primary-700 hover:bg-primary-100 dark:bg-primary-900/20 dark:text-primary-300 dark:hover:bg-primary-900/30',
+  green: 'bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-900/20 dark:text-green-300 dark:hover:bg-green-900/30',
+  red: 'bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-300 dark:hover:bg-red-900/30',
+};
+export const rowActionCls = (tone = 'primary') =>
+  `inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${ROW_ACTION_TONE[tone] || ROW_ACTION_TONE.primary}`;
+
 export function BtnPrimary({ children, className = '', style, ...rest }) {
   const { getThemeColor } = useTheme();
   return (

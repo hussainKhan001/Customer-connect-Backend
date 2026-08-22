@@ -68,8 +68,17 @@ export function AppProvider({ children }) {
   const [filters, setFilters] = useState({ seg: '', proj: '', ent: '', q: '', status: '' });
   const [stmtId, setStmtId] = useState(null);
 
+  /* "shell" records (see backend/src/lib/validateIncomplete.js) have no
+     PAN and/or no confirmed unit financials — enrich()/score()/gate()/
+     confidence() all assume those are real, so incomplete records are
+     filtered out before enrich runs rather than taught to tolerate
+     nulls throughout that whole pipeline. They still live in `raw` and
+     surface separately via incompleteRecords, for the dedicated queue. */
+  const completeRaw = useMemo(() => raw.filter((c) => !c.incomplete), [raw]);
+  const incompleteRecords = useMemo(() => raw.filter((c) => c.incomplete), [raw]);
+
   /* the only expensive computation in the app — memoised on its inputs */
-  const base = useMemo(() => enrich(raw, weights), [raw, weights]);
+  const base = useMemo(() => enrich(completeRaw, weights), [completeRaw, weights]);
   const byId = useCallback((id) => base.find((c) => c.id === id), [base]);
 
   const setView = useCallback((v) => {
@@ -121,6 +130,25 @@ export function AppProvider({ children }) {
     return body;
   }, []);
 
+  /* same shape as addCustomer, but for a raw-allotment-list "shell"
+     record — only name/mobile/project/unit required. See
+     backend/src/lib/validateIncomplete.js. */
+  const addIncompleteCustomer = useCallback(async (draft) => {
+    const res = await apiFetch('/api/customers/incomplete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(draft),
+    });
+    const body = await res.json();
+    if (!res.ok) {
+      const err = new Error('Validation failed');
+      err.errors = body.errors || {};
+      throw err;
+    }
+    setRaw((prev) => [body, ...prev]);
+    return body;
+  }, []);
+
   /* replaces one record in `raw` with the server's latest copy of it —
      used after a write that targets a single customer (e.g. logging a
      sent statement) so the UI reflects it without a full refetch */
@@ -128,8 +156,50 @@ export function AppProvider({ children }) {
     setRaw((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
   }, []);
 
+  /* the "complete profile" form — PATCHes only the fields the caller
+     changed. Throws with a `.errors` field-map on validation/permission
+     failure, same convention as addCustomer, for the modal to surface. */
+  const updateProfile = useCallback(async (id, patch) => {
+    const res = await apiFetch(`/api/customers/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(patch),
+    });
+    const body = await res.json();
+    if (!res.ok) {
+      const err = new Error(body.error || 'Update failed');
+      err.errors = body.errors || {};
+      throw err;
+    }
+    patchCustomer(body);
+    return body;
+  }, [patchCustomer]);
+
+  /* generic mutation helper for the operational-write endpoints (status,
+     litigation, complaints, loan, valuation, nps, referrals, events,
+     site visits, exit, complete, calls, milestones, permissions) — same
+     fetch/error/patchCustomer shape as updateProfile, exposed once so
+     each new modal/inline action calls its own endpoint path directly
+     instead of the context growing one near-identical named wrapper
+     per action. */
+  const mutateCustomer = useCallback(async (path, body = {}, method = 'PATCH') => {
+    const res = await apiFetch(path, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const responseBody = await res.json();
+    if (!res.ok) {
+      const err = new Error(responseBody.error || 'Request failed');
+      err.errors = responseBody.errors || {};
+      throw err;
+    }
+    patchCustomer(responseBody);
+    return responseBody;
+  }, [patchCustomer]);
+
   const value = {
-    base, byId, raw,
+    base, byId, raw, incompleteRecords,
     loading, loadError, live,
     weights, setWeights,
     view, setView,
@@ -137,7 +207,7 @@ export function AppProvider({ children }) {
     sort, toggleSort,
     filters, setFilters, clearFilters,
     stmtId, setStmtId,
-    openCustomer, openSegment, openStatement, addCustomer, patchCustomer,
+    openCustomer, openSegment, openStatement, addCustomer, addIncompleteCustomer, patchCustomer, updateProfile, mutateCustomer,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

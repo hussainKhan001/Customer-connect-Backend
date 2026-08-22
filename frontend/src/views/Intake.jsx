@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useApp } from '../context/AppContext.jsx';
 import { Card, Chip, Banner, TableWrap, BtnPrimary, btnGhost, confColor } from '../components/Ui.jsx';
 import ThemedSelect from '../components/theme/ThemedSelect.jsx';
 import { PROJECTS } from '../lib/core.js';
-import { CHECKS, FILES, FORM_FIELDS, SAMPLE_DRAFT, exceptions, validateDraft } from '../lib/intake.js';
+import { CHECKS, FILES, FORM_FIELDS, SAMPLE_DRAFT, exceptions, validateDraft, validateShellDraft } from '../lib/intake.js';
+import { downloadSampleTemplate, parseImportFile } from '../lib/excel.js';
+import { toast } from '../lib/toast.js';
 
 const EMPTY = Object.fromEntries(FORM_FIELDS.map(([k]) => [k, '']));
 
@@ -23,7 +25,7 @@ const tdCls = 'px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/60 alig
 const thCls = 'text-left text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 whitespace-nowrap';
 
 export default function Intake() {
-  const { base, addCustomer, openCustomer } = useApp();
+  const { base, addCustomer, addIncompleteCustomer, openCustomer } = useApp();
   const [draft, setDraft] = useState(EMPTY);
   const [errors, setErrors] = useState({});
 
@@ -35,6 +37,51 @@ export default function Intake() {
   const setVal = (k) => (v) => setDraft((d) => ({ ...d, [k]: v }));
 
   const [submitting, setSubmitting] = useState(false);
+
+  /* ---- bulk import ---- */
+  const fileRef = useRef(null);
+  const [importIncomplete, setImportIncomplete] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
+
+  const handleImportFile = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setImporting(true);
+    setImportResult(null);
+    try {
+      const rows = await parseImportFile(file);
+      if (!rows.length) {
+        toast.error('Nothing to import', 'The sheet had no data rows below the header.');
+        return;
+      }
+      const validate = importIncomplete ? validateShellDraft : validateDraft;
+      const create = importIncomplete ? addIncompleteCustomer : addCustomer;
+      let ok = 0;
+      const held = [];
+      for (const { rowNumber, draft: row } of rows) {
+        const errs = validate(row, base);
+        if (Object.keys(errs).length) {
+          held.push({ rowNumber, row, errs });
+          continue;
+        }
+        try {
+          await create(row);
+          ok++;
+        } catch (err) {
+          held.push({ rowNumber, row, errs: err.errors || { name: 'Could not save.' } });
+        }
+      }
+      setImportResult({ total: rows.length, ok, held });
+      if (ok) toast.success('Import complete', `${ok} of ${rows.length} row(s) added.`);
+      if (held.length) toast.error(`${held.length} row(s) held`, 'Fix these in the sheet and re-upload — nothing partial was guessed.');
+    } catch (err) {
+      toast.error('Could not read the file', err.message || 'Confirm it is the downloaded template, unmodified in structure.');
+    } finally {
+      setImporting(false);
+    }
+  };
 
   const submit = async () => {
     const errs = validateDraft(draft, base);
@@ -75,6 +122,62 @@ export default function Intake() {
           </Card>
         ))}
       </div>
+
+      <Card title="Bulk import" hint="Excel, validated per row">
+        <div className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mb-3">
+          Download the template, fill one row per owner, then upload it back. Each row is validated exactly
+          like the single-owner form — a row that fails is held and reported, never guessed or partially saved.
+        </div>
+        <div className="flex flex-wrap items-center gap-3 mb-3">
+          <button className={btnGhost} onClick={() => downloadSampleTemplate()}>
+            Download template
+          </button>
+          <button
+            className={btnGhost}
+            disabled={importing}
+            onClick={() => fileRef.current?.click()}
+          >
+            {importing ? 'Importing…' : 'Upload filled sheet'}
+          </button>
+          <input ref={fileRef} type="file" accept=".xlsx" className="hidden" onChange={handleImportFile} />
+          <label className="flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300">
+            <input
+              type="checkbox"
+              checked={importIncomplete}
+              onChange={(e) => setImportIncomplete(e.target.checked)}
+              className="rounded border-gray-300 dark:border-gray-600"
+            />
+            Import as incomplete records
+          </label>
+        </div>
+        <div className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mb-3">
+          {importIncomplete
+            ? 'Only name, mobile, project and unit are required — use this for a raw allotment list before KYC/financials are on file. PAN and money fields, if present, are still validated.'
+            : 'All fields are required, same as the single-owner form below — use this once financials and booking dates are confirmed.'}
+        </div>
+        {importResult && (
+          <div className="text-xs">
+            <div className="mb-1.5">
+              <Chip cls="g">{importResult.ok} added</Chip>{' '}
+              {importResult.held.length > 0 && <Chip cls="r">{importResult.held.length} held</Chip>}
+            </div>
+            {importResult.held.length > 0 && (
+              <TableWrap>
+                <table className="w-full border-collapse">
+                  <tbody>
+                    {importResult.held.slice(0, 20).map((h, i) => (
+                      <tr key={i}>
+                        <td className={tdCls}>Row {h.rowNumber}: {h.row.name || '(no name)'} · {h.row.unit || '—'}</td>
+                        <td className={tdCls}>{Object.values(h.errs).join(' ')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </TableWrap>
+            )}
+          </div>
+        )}
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.3fr] gap-4 mb-3.5">
         <Card title="Add an owner" hint="validated live">

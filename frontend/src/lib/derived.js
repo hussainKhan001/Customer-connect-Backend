@@ -208,19 +208,23 @@ export function triggerList(base) {
 }
 
 /* ---- per-owner document vault ---- */
+/* `key` is a stable identifier for each row, used to match an actual
+   uploaded file (c.documents[]) to the checklist row it belongs to —
+   independent of whether the underlying milestone date is set, since a
+   scanned copy and a recorded date are two different questions. */
 export function docsFor(c) {
   const d = [];
   c.units.forEach((u) => {
-    d.push({ n: 'Allotment letter — ' + u.unit, d: addD(u.bookDate, 7), ok: true });
-    d.push({ n: 'Sale agreement — ' + u.unit, d: u.agrDate, ok: !!u.agrDate });
-    d.push({ n: 'Registered sale deed — ' + u.unit, d: u.regDate, ok: !!u.regDate });
-    if (u.possDate) d.push({ n: 'Possession certificate — ' + u.unit, d: u.possDate, ok: true });
-    if (u.exited) d.push({ n: 'Transfer deed (third party) — ' + u.unit, d: u.exitDate, ok: true });
+    d.push({ key: `allotment-${u.unit}`, n: 'Allotment letter — ' + u.unit, d: addD(u.bookDate, 7), ok: true });
+    d.push({ key: `agreement-${u.unit}`, n: 'Sale agreement — ' + u.unit, d: u.agrDate, ok: !!u.agrDate });
+    d.push({ key: `registry-${u.unit}`, n: 'Registered sale deed — ' + u.unit, d: u.regDate, ok: !!u.regDate });
+    if (u.possDate) d.push({ key: `possession-${u.unit}`, n: 'Possession certificate — ' + u.unit, d: u.possDate, ok: true });
+    if (u.exited) d.push({ key: `transfer-${u.unit}`, n: 'Transfer deed (third party) — ' + u.unit, d: u.exitDate, ok: true });
   });
-  d.push({ n: 'KYC — PAN and Aadhaar', d: c.kycDate, ok: !!c.kycDate });
+  d.push({ key: 'kyc', n: 'KYC — PAN and Aadhaar', d: c.kycDate, ok: !!c.kycDate });
   if (c.status === 'TRANSFER_IN_PROGRESS') {
-    d.push({ n: 'Succession / transfer papers', d: null, ok: false });
-    d.push({ n: 'KYC — nominee', d: null, ok: false });
+    d.push({ key: 'succession', n: 'Succession / transfer papers', d: null, ok: false });
+    d.push({ key: 'kyc-nominee', n: 'KYC — nominee', d: null, ok: false });
   }
   return d;
 }
@@ -242,6 +246,9 @@ export function activityFor(c) {
   });
   c.referrals.forEach((r) => a.push({ d: r.date, w: 'Referral', t: 'Referred ' + r.n + ' — ' + r.status, by: 'Sales' }));
   c.events.forEach((e) => a.push({ d: e.d, w: 'Event', t: 'Attended ' + e.n, by: 'CRM' }));
+  (c.calls || []).forEach((call) => a.push({
+    d: call.date, w: 'Call', t: 'Call — ' + call.outcome + (call.note ? ': ' + call.note : ''), by: call.by || 'CRM',
+  }));
   c.statements.forEach((s) => a.push({
     d: s.d, w: 'Statement',
     t: 'Portfolio statement ' + s.v + ' sent via ' + s.ch +

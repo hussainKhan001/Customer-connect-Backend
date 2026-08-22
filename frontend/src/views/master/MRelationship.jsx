@@ -1,15 +1,73 @@
-import { Card, Chip, Banner, Row, KV, Timeline, TableWrap } from '../../components/Ui.jsx';
-import { fmtD } from '../../lib/core.js';
+import { useState } from 'react';
+import Swal from 'sweetalert2';
+import { Card, Chip, Banner, Row, KV, Timeline, TableWrap, rowActionCls, formLabelCls, formInputCls } from '../../components/Ui.jsx';
+import { useApp } from '../../context/AppContext.jsx';
+import { fmtD, todayInput } from '../../lib/core.js';
+import { toast } from '../../lib/toast.js';
+import ReferralModal from '../../components/ReferralModal.jsx';
+import EventModal from '../../components/EventModal.jsx';
+import ComplaintModal from '../../components/ComplaintModal.jsx';
 
 export default function MRelationship({ c }) {
+  const { mutateCustomer } = useApp();
   const hasOpenRef = c.referrals.some((x) => x.status.startsWith('Open'));
   const avgClose = c.complaints.length
     ? Math.round(c.complaints.reduce((s, x) => s + x.days, 0) / c.complaints.length) + ' days'
     : '—';
 
+  const [referralOpen, setReferralOpen] = useState(false);
+  const [eventOpen, setEventOpen] = useState(false);
+  const [complaintOpen, setComplaintOpen] = useState(false);
+  const [nps, setNps] = useState(c.nps ?? '');
+  const [npsDate, setNpsDate] = useState(c.npsDate ? String(c.npsDate).slice(0, 10) : todayInput());
+  const [savingNps, setSavingNps] = useState(false);
+
+  const saveNps = async () => {
+    setSavingNps(true);
+    try {
+      await mutateCustomer(`/api/customers/${c.id}/nps`, { nps, npsDate });
+      toast.success('NPS recorded', `${nps}/10 for ${c.name}.`);
+    } catch {
+      toast.error('Could not save', 'Enter a whole number from 0 to 10.');
+    } finally {
+      setSavingNps(false);
+    }
+  };
+
+  const closeComplaint = async (o) => {
+    const result = await Swal.fire({
+      icon: 'question',
+      title: 'Close this complaint?',
+      text: `${o.ncr} — the contact gate reopens automatically once every open complaint is closed.`,
+      showCancelButton: true,
+      confirmButtonText: 'Close it',
+    });
+    if (!result.isConfirmed) return;
+    const idx = c.openComplaints.findIndex((x) => x.ncr === o.ncr);
+    try {
+      await mutateCustomer(`/api/customers/${c.id}/complaints/${idx}/close`, { ncr: o.ncr }, 'POST');
+      toast.success('Complaint closed', o.ncr);
+    } catch {
+      toast.error('Could not close', 'Reload and try again.');
+    }
+  };
+
+  const siteVisit = async (delta) => {
+    try {
+      await mutateCustomer(`/api/customers/${c.id}/site-visits`, { delta }, 'POST');
+    } catch {
+      toast.error('Could not save', 'Try again.');
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <Card title="Referrals given" hint={c.referrals.length}>
+      <Card
+        title="Referrals given"
+        hint={
+          <button className={rowActionCls('primary')} onClick={() => setReferralOpen(true)}>Add referral</button>
+        }
+      >
         {c.referrals.length ? (
           <>
             <TableWrap>
@@ -47,7 +105,26 @@ export default function MRelationship({ c }) {
         )}
       </Card>
 
-      <Card title="Service history">
+      <Card
+        title="Service history"
+        hint={
+          <button className={rowActionCls('red')} onClick={() => setComplaintOpen(true)}>Log complaint</button>
+        }
+      >
+        <div className="flex items-end gap-2 mb-3 pb-3 border-b border-gray-100 dark:border-gray-700/60">
+          <div className="flex-1">
+            <label className={formLabelCls}>NPS</label>
+            <input type="number" min="0" max="10" value={nps} onChange={(e) => setNps(e.target.value)} className={formInputCls(false)} />
+          </div>
+          <div className="flex-1">
+            <label className={formLabelCls}>Date</label>
+            <input type="date" value={npsDate} onChange={(e) => setNpsDate(e.target.value)} className={formInputCls(false)} />
+          </div>
+          <button className={rowActionCls('primary')} disabled={savingNps} onClick={saveNps}>
+            {savingNps ? 'Saving…' : 'Record NPS'}
+          </button>
+        </div>
+
         <KV>
           <Row k="NPS" miss={!c.nps}
                v={c.nps ? <>{c.nps}/10 <span className="text-[10.5px] text-gray-400 dark:text-gray-500">({fmtD(c.npsDate)})</span></> : null} />
@@ -56,15 +133,31 @@ export default function MRelationship({ c }) {
             : '0'} />
           <Row k="Closed complaints" v={c.complaints.length} />
           <Row k="Average closure time" v={avgClose} />
-          <Row k="Events attended" v={c.events.length} />
-          <Row k="Site visits since booking" v={c.siteVisits} />
+          <Row k="Events attended" v={
+            <>
+              {c.events.length}{' '}
+              <button className={rowActionCls('primary')} onClick={() => setEventOpen(true)}>Log event</button>
+            </>
+          } />
+          <Row k="Site visits since booking" v={
+            <span className="inline-flex items-center gap-1.5">
+              {c.siteVisits}
+              <button className={rowActionCls('primary')} onClick={() => siteVisit(-1)} disabled={!c.siteVisits}>-1</button>
+              <button className={rowActionCls('primary')} onClick={() => siteVisit(1)}>+1</button>
+            </span>
+          } />
           <Row k="Portal" v={c.portalLast ? 'last seen ' + fmtD(c.portalLast) : 'never logged in'} />
         </KV>
 
         {c.openComplaints.map((o) => (
           <Banner key={o.ncr} kind="block" style={{ margin: '12px 0 0' }}>
-            <b>{o.t}</b><br />
-            Raised {fmtD(o.raised)} · ageing <b>{o.days} days</b> · {o.ncr} · owner {o.owner}
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <b>{o.t}</b><br />
+                Raised {fmtD(o.raised)} · ageing <b>{o.days} days</b> · {o.ncr} · owner {o.owner}
+              </div>
+              <button className={rowActionCls('green')} onClick={() => closeComplaint(o)}>Close</button>
+            </div>
           </Banner>
         ))}
 
@@ -82,6 +175,10 @@ export default function MRelationship({ c }) {
           </div>
         )}
       </Card>
+
+      {referralOpen && <ReferralModal customer={c} onClose={() => setReferralOpen(false)} />}
+      {eventOpen && <EventModal customer={c} onClose={() => setEventOpen(false)} />}
+      {complaintOpen && <ComplaintModal customer={c} onClose={() => setComplaintOpen(false)} />}
     </div>
   );
 }
