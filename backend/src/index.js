@@ -9,8 +9,9 @@ import { connectDB } from './db.js';
 import authRouter from './routes/auth.js';
 import customersRouter from './routes/customers.js';
 import projectsRouter from './routes/projects.js';
+import usersRouter from './routes/users.js';
 import Customer from './models/Customer.js';
-import { requireAuth } from './lib/auth.js';
+import { requireAuth, requirePermission } from './lib/auth.js';
 
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
 
@@ -24,12 +25,18 @@ app.use(express.json());
 app.use('/api/auth', authRouter);
 app.use('/api/customers', requireAuth, customersRouter);
 app.use('/api/projects', requireAuth, projectsRouter);
+app.use('/api/users', requireAuth, requirePermission('User management — add/edit/deactivate accounts'), usersRouter);
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
 // eslint-disable-next-line no-unused-vars
 app.use((err, _req, res, _next) => {
   console.error(err);
+  /* multer (file upload) rejections are user-facing validation errors,
+     not server faults — surface them as a normal field error instead
+     of a generic 500 */
+  if (err.code === 'LIMIT_FILE_SIZE') return res.status(400).json({ errors: { file: 'File is too large — max 10MB.' } });
+  if (err.message === 'UNSUPPORTED_FILE_TYPE') return res.status(400).json({ errors: { file: 'Only PDF, JPG or PNG files are allowed.' } });
   res.status(500).json({ error: 'Internal server error' });
 });
 

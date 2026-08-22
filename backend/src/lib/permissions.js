@@ -17,6 +17,9 @@ export const PERMS = [
   ['Export the base', ['F', 'S', 'N', 'N', 'N', 'N', 'N', 'S', 'N']],
   ['Change the valuation note', ['S', 'N', 'N', 'N', 'N', 'N', 'N', 'F', 'N']],
   ['Override the contact gate', ['N', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N']],
+  ['Owner status and transfer state', ['F', 'S', 'N', 'N', 'N', 'F', 'N', 'N', 'S']],
+  ['Engagement data — NPS, referrals, events, visits', ['F', 'F', 'F', 'S', 'O', 'F', 'N', 'N', 'N']],
+  ['User management — add/edit/deactivate accounts', ['F', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N']],
 ];
 
 export const PERM_LABEL = {
@@ -26,11 +29,25 @@ export const PERM_LABEL = {
   N: { cls: 'no', t: 'none' },
 };
 
-/* true unless the role's cell for this capability is 'N'. Does not
-   distinguish S/O/F yet (own-scope/own-customers record-level
-   filtering needs an ownership model this app doesn't have) — see the
-   plan doc for what's intentionally deferred. */
-export function hasPermission(role, capabilityLabel) {
+/* the one row no per-user override is allowed to touch — every screen
+   in this app (Scoring Engine, Command Centre, Access & Governance)
+   states as an absolute rule that nobody, at any level, can override
+   the contact gate. Letting a per-user exception reach this row would
+   quietly make that promise false. */
+export const NON_OVERRIDABLE = 'Override the contact gate';
+
+/* true unless the role's cell for this capability is 'N'. `overrides`
+   (a user's own permissionOverrides, see models/User.js) takes
+   precedence over the role's cell when present for that exact label —
+   except NON_OVERRIDABLE, which always falls through to the role
+   matrix (permanently 'N' for every role). Does not distinguish S/O/F
+   yet (own-scope/own-customers record-level filtering needs an
+   ownership model this app doesn't have) — see the plan doc for what's
+   intentionally deferred. */
+export function hasPermission(role, capabilityLabel, overrides) {
+  if (overrides && capabilityLabel !== NON_OVERRIDABLE && overrides[capabilityLabel]) {
+    return overrides[capabilityLabel] !== 'N';
+  }
   const row = PERMS.find(([label]) => label === capabilityLabel);
   if (!row) return false;
   const idx = ROLES.indexOf(role);

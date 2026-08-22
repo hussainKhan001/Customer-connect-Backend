@@ -5,6 +5,14 @@
    ===================================================================== */
 
 export const TODAY = new Date(2026, 7, 10);
+/* TODAY as its own UTC-midnight instant — a date-only form value like
+   "2026-08-10" parses as UTC midnight (ECMAScript spec), while TODAY
+   itself is local midnight. In any timezone ahead of UTC (e.g. IST)
+   comparing the two as raw instants makes entering today's own date
+   register as "in the future". Use this for any "not after today"
+   check against a date-only input instead of comparing to TODAY
+   directly. */
+export const TODAY_UTC_MIDNIGHT = Date.UTC(TODAY.getFullYear(), TODAY.getMonth(), TODAY.getDate());
 
 /* ---- deterministic PRNG so the sample base is identical every load ---- */
 let seed = 20260810;

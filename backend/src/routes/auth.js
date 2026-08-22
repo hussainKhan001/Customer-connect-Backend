@@ -1,10 +1,11 @@
 import { Router } from 'express';
 import User from '../models/User.js';
 import { verifyPassword, signToken, setAuthCookie, clearAuthCookie, requireAuth } from '../lib/auth.js';
+import { asyncHandler } from '../lib/asyncHandler.js';
 
 const router = Router();
 
-router.post('/login', async (req, res) => {
+router.post('/login', asyncHandler(async (req, res) => {
   const { email, password } = req.body || {};
   if (!email || !password) return res.status(400).json({ error: 'Email and password are required' });
 
@@ -17,7 +18,7 @@ router.post('/login', async (req, res) => {
   const token = signToken(user);
   setAuthCookie(res, token);
   res.json({ user: { id: user._id.toString(), email: user.email, name: user.name, role: user.role } });
-});
+}));
 
 router.post('/logout', (_req, res) => {
   clearAuthCookie(res);

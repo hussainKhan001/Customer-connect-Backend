@@ -3,7 +3,31 @@
    The frontend keeps its own copy for instant feedback; this is what
    actually decides whether a record gets written. Uses this backend's
    own copy of core.js (see backend/src/lib/core.js). */
-import { TODAY, inrF, projByName } from './core.js';
+import { TODAY, TODAY_UTC_MIDNIGHT, fmtD, inrF, projByName, OCC, COMM } from './core.js';
+
+/* the bulk-import sheet (see FULL_FORM_FIELDS in the frontend's
+   intake.js) uses flat Yes/No text columns for booleans and consent,
+   since a spreadsheet cell can't hold a nested object or a real
+   boolean — this turns those into what validateProfilePatch expects
+   before reusing its per-field checks below, rather than duplicating
+   that validation here. */
+function parseYesNo(v) {
+  const s = String(v ?? '').trim().toLowerCase();
+  return s === 'yes' || s === 'true' || s === '1';
+}
+export function normalizeProfileInput(d) {
+  const out = { ...d };
+  if (typeof out.coOnAgreement === 'string') out.coOnAgreement = parseYesNo(out.coOnAgreement);
+  const consentKeys = ['consentWhatsapp', 'consentSms', 'consentEmail', 'consentMarketing', 'consentChildren'];
+  if (consentKeys.some((k) => d[k] !== undefined) || d.consentPurpose !== undefined) {
+    out.consent = {
+      whatsapp: parseYesNo(d.consentWhatsapp), sms: parseYesNo(d.consentSms), email: parseYesNo(d.consentEmail),
+      marketing: parseYesNo(d.consentMarketing), children: parseYesNo(d.consentChildren),
+      purpose: d.consentPurpose,
+    };
+  }
+  return out;
+}
 
 export function validateDraft(d, existingPans = []) {
   const e = {};
@@ -33,26 +57,51 @@ export function validateDraft(d, existingPans = []) {
   if (!(pd >= 0)) e.paid = 'Received to date is required — enter 0 if nothing has been received.';
   else if (co > 0 && pd > co + 1) e.paid = 'Received exceeds consideration by ' + inrF(pd - co) + '. Rejected, not adjusted.';
 
+  /* the extra full-profile columns (FULL_FORM_FIELDS) are all optional
+     on create — reuse the exact same per-field checks the "Complete
+     profile" endpoint already uses, rather than a second copy of them */
+  const profile = validateProfilePatch(normalizeProfileInput(d));
+  Object.assign(e, profile.errors);
+
   return e;
 }
 
 /* Port of buildCustomer() from src/lib/intake.js — takes a validated
-   draft + a freshly-issued id and returns the raw Customer shape. */
+   draft + a freshly-issued id and returns the raw Customer shape. Any
+   of the FULL_FORM_FIELDS profile columns present in `d` (dob, email,
+   consent, etc.) are applied via the same validateProfilePatch logic
+   used for editing; anything not provided falls back to the original
+   "not captured yet" defaults, unchanged from before those columns
+   existed. */
 export function buildCustomer(d, id) {
   const p = projByName(d.project);
   const bd = new Date(d.bookDate);
   const sa = +d.saleable, rt = +d.rate, dc = +d.discount || 0, co = +d.consideration, pd = +d.paid;
+
+  const profile = validateProfilePatch(normalizeProfileInput(d)).patch;
+  const captured = { dob: false, anniv: false, kid: false, occ: false, addr: false };
+  if (profile.dob) captured.dob = true;
+  if (profile.spouseDob) captured.anniv = true;
+  if (profile.occupation) captured.occ = true;
+  if (profile.corrAddr) captured.addr = true;
+  const hasConsent = profile.consent && Object.entries(profile.consent).some(([k, v]) => k !== 'purpose' && v === true);
+
   return {
     id, status: 'ACTIVE', statusSince: bd, statusNote: null,
-    salutation: 'Mr.', name: d.name.trim(), coApplicant: null, coRelation: 'Spouse', coOnAgreement: false,
-    dob: null, spouseDob: null, children: [],
-    pan: d.pan.replace(/\s/g, '').toUpperCase(), aadhaarHeld: false, kycDate: bd,
-    mobile: d.mobile, email: null,
-    corrAddr: 'Address not updated since booking', city: 'Gwalior',
-    occupation: 'Not captured', occBand: 50, incomeBand: null, community: 'Other',
-    captured: { dob: false, anniv: false, kid: false, occ: false, addr: false },
-    consent: { whatsapp: false, sms: false, email: false, marketing: false, date: null, purpose: null, children: false },
-    source: 'Direct walk-in', referredBy: null,
+    salutation: d.salutation ? String(d.salutation).trim() : 'Mr.',
+    name: d.name.trim(),
+    coApplicant: profile.coApplicant ?? null, coRelation: profile.coRelation ?? 'Spouse', coOnAgreement: profile.coOnAgreement ?? false,
+    dob: profile.dob ?? null, spouseDob: profile.spouseDob ?? null, children: [],
+    pan: d.pan.replace(/\s/g, '').toUpperCase(), aadhaarHeld: false, kycDate: profile.kycDate ?? bd,
+    mobile: d.mobile, email: profile.email ?? null,
+    corrAddr: profile.corrAddr ?? 'Address not updated since booking', city: profile.city ?? 'Gwalior',
+    occupation: profile.occupation ?? 'Not captured', occBand: profile.occBand ?? 50, incomeBand: profile.incomeBand ?? null,
+    community: profile.community ?? 'Other',
+    captured,
+    consent: profile.consent
+      ? { ...profile.consent, date: hasConsent ? TODAY : null }
+      : { whatsapp: false, sms: false, email: false, marketing: false, date: null, purpose: null, children: false },
+    source: d.source ? String(d.source).trim() : 'Direct walk-in', referredBy: null,
     units: [{
       unit: d.unit, project: p.name, entity: p.entity, type: '—',
       carpet: Math.round(sa * 0.68), saleable: sa, loading: 32,
@@ -66,4 +115,93 @@ export function buildCustomer(d, id) {
     complaints: [], openComplaints: [], nps: null, npsDate: null, litigation: false,
     referrals: [], events: [], siteVisits: 0, portalLast: null, statements: [],
   };
+}
+
+/* Validates a PATCH /api/customers/:id body — the "complete profile"
+   form, covering exactly the fields the Data Confidence checklist
+   flags as missing (dob, anniversary, address, occupation, consent)
+   plus the adjacent identity fields shown alongside them (co-applicant,
+   email, city, community). Every key is optional — only keys present
+   in the body are validated/applied, so the form can save one field
+   at a time. Occupation is looked up against OCC so occBand/incomeBand
+   (which drive the Capacity score) are always derived, never hand-typed. */
+export function validateProfilePatch(d) {
+  const e = {};
+  const p = {};
+
+  if (d.dob !== undefined) {
+    const v = String(d.dob || '').trim();
+    if (!v) p.dob = null;
+    else {
+      const dt = new Date(v);
+      if (Number.isNaN(dt.getTime())) e.dob = 'Enter a valid date.';
+      else if (dt > TODAY) e.dob = 'Date of birth cannot be in the future.';
+      else p.dob = dt;
+    }
+  }
+
+  if (d.spouseDob !== undefined) {
+    const v = String(d.spouseDob || '').trim();
+    if (!v) p.spouseDob = null;
+    else {
+      const dt = new Date(v);
+      if (Number.isNaN(dt.getTime())) e.spouseDob = 'Enter a valid date.';
+      else if (dt > TODAY) e.spouseDob = 'Anniversary date cannot be in the future.';
+      else p.spouseDob = dt;
+    }
+  }
+
+  if (d.email !== undefined) {
+    const v = String(d.email || '').trim();
+    if (v && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) e.email = 'Enter a valid email address.';
+    else p.email = v || null;
+  }
+
+  if (d.kycDate !== undefined) {
+    const v = String(d.kycDate || '').trim();
+    if (!v) p.kycDate = null;
+    else {
+      const dt = new Date(v);
+      if (Number.isNaN(dt.getTime())) e.kycDate = 'Enter a valid date.';
+      else if (dt.getTime() > TODAY_UTC_MIDNIGHT) e.kycDate = `KYC date can't be after today (${fmtD(TODAY)}).`;
+      else p.kycDate = dt;
+    }
+  }
+
+  if (d.coApplicant !== undefined) p.coApplicant = String(d.coApplicant || '').trim() || null;
+  if (d.coRelation !== undefined) p.coRelation = String(d.coRelation || '').trim() || 'Spouse';
+  if (d.coOnAgreement !== undefined) p.coOnAgreement = !!d.coOnAgreement;
+
+  if (d.corrAddr !== undefined) {
+    const v = String(d.corrAddr || '').trim();
+    if (v && v.length < 6) e.corrAddr = 'Enter the full current address.';
+    else p.corrAddr = v || null;
+  }
+  if (d.city !== undefined) p.city = String(d.city || '').trim() || null;
+
+  if (d.occupation !== undefined) {
+    const v = String(d.occupation || '').trim();
+    if (!v) p.occupation = null;
+    else {
+      const o = OCC.find((x) => x.k === v);
+      if (!o) e.occupation = 'Choose an occupation from the list.';
+      else { p.occupation = o.k; p.occBand = o.b; p.incomeBand = o.band; }
+    }
+  }
+
+  if (d.community !== undefined) {
+    const v = String(d.community || '').trim();
+    if (v && !COMM.includes(v)) e.community = 'Choose a community from the list.';
+    else p.community = v || null;
+  }
+
+  if (d.consent !== undefined) {
+    const cs = d.consent || {};
+    p.consent = {
+      whatsapp: !!cs.whatsapp, sms: !!cs.sms, email: !!cs.email, marketing: !!cs.marketing,
+      children: !!cs.children, purpose: String(cs.purpose || '').trim() || null,
+    };
+  }
+
+  return { errors: e, patch: p };
 }

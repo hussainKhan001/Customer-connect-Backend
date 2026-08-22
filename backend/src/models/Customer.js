@@ -90,6 +90,17 @@ const StatementSchema = new Schema({
   askedNewProject: Boolean,
 }, { _id: false });
 
+/* the one thing missing before the score weights can ever be re-fit
+   against real outcomes (see Activity log's own footer note) — a call
+   made off the Trigger Calendar needs its result captured somewhere,
+   not just the fact that a reason to call existed. */
+const CallSchema = new Schema({
+  date: Date,
+  outcome: String,
+  note: { type: String, default: null },
+  by: String,
+}, { _id: false });
+
 const ChildSchema = new Schema({
   n: String,
   dob: Date,
@@ -118,6 +129,19 @@ const ReferredBySchema = new Schema({
   id: String,
 }, { _id: false });
 
+/* one uploaded file per Document Vault checklist row (see docsFor() in
+   the frontend's derived.js) — `key` matches that row's stable key
+   (e.g. 'kyc', 'agreement-GC-C-305'), so an upload replaces whatever
+   was there before rather than accumulating duplicates. Stored on
+   Cloudinary, not this app's own disk (see lib/cloudinary.js). */
+const DocumentSchema = new Schema({
+  key: { type: String, required: true },
+  filename: String,
+  url: { type: String, required: true },
+  publicId: { type: String, required: true },
+  uploadedAt: { type: Date, default: null },
+}, { _id: false });
+
 const CustomerSchema = new Schema({
   id: { type: String, required: true, unique: true, index: true },
   status: { type: String, enum: ['ACTIVE', 'EXITED', 'TRANSFER_IN_PROGRESS', 'DECEASED'], default: 'ACTIVE' },
@@ -131,7 +155,7 @@ const CustomerSchema = new Schema({
   dob: { type: Date, default: null },
   spouseDob: { type: Date, default: null },
   children: { type: [ChildSchema], default: [] },
-  pan: { type: String, required: true },
+  pan: { type: String, required: false, default: null },
   aadhaarHeld: { type: Boolean, default: false },
   kycDate: { type: Date, default: null },
   mobile: { type: String, required: true },
@@ -157,6 +181,18 @@ const CustomerSchema = new Schema({
   siteVisits: { type: Number, default: 0 },
   portalLast: { type: Date, default: null },
   statements: { type: [StatementSchema], default: [] },
+  documents: { type: [DocumentSchema], default: [] },
+  calls: { type: [CallSchema], default: [] },
+  /* true for a "shell" record created from a raw allotment/inventory
+     list that has no PAN and/or no confirmed unit financials yet — a
+     real, common state for legacy data migration, distinct from a
+     validation failure (see Intake's exceptions queue for that). Kept
+     out of enrich()/score/gate/confidence entirely (frontend
+     AppContext filters on this before enrich runs) since those all
+     assume a real PAN and real unit numbers; always recomputed from
+     the actual fields on write (see validateIncomplete.js), never set
+     directly by a client. */
+  incomplete: { type: Boolean, default: false },
 }, {
   toJSON: {
     transform: (_doc, ret) => { delete ret._id; delete ret.__v; return ret; },
