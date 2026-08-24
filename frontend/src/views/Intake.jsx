@@ -95,6 +95,38 @@ export default function Intake() {
     }
   };
 
+  /* saves the already-parsed rows that only failed because PAN/
+     financials are missing — reuses handleImportFile's in-memory
+     `held` rows rather than asking for the file again, since nothing
+     about them changed except which validator applies. */
+  const [savingIncomplete, setSavingIncomplete] = useState(false);
+  const saveHeldAsIncomplete = async () => {
+    if (!importResult) return;
+    setSavingIncomplete(true);
+    try {
+      const stillHeld = [];
+      let saved = 0;
+      for (const h of importResult.held) {
+        const errs = validateShellDraft(h.row, base);
+        if (Object.keys(errs).length) {
+          stillHeld.push(h);
+          continue;
+        }
+        try {
+          await addIncompleteCustomer(h.row);
+          saved++;
+        } catch (err) {
+          stillHeld.push({ ...h, errs: err.errors || { name: 'Could not save.' } });
+        }
+      }
+      setImportResult((r) => ({ ...r, ok: r.ok + saved, held: stillHeld, wouldPassAsShell: 0 }));
+      if (saved) toast.success('Saved as incomplete records', `${saved} row(s) added — complete PAN/financials later from the Incomplete records queue.`);
+      if (stillHeld.length) toast.error(`${stillHeld.length} row(s) still held`, 'These failed for a different reason — see the table below.');
+    } finally {
+      setSavingIncomplete(false);
+    }
+  };
+
   const submit = async () => {
     const errs = validateDraft(draft, base);
     setErrors(errs);
@@ -171,9 +203,16 @@ export default function Intake() {
           <div className="text-xs">
             {importResult.wouldPassAsShell > 0 && (
               <Banner kind="warn" style={{ margin: '0 0 12px' }}>
-                <b>{importResult.wouldPassAsShell} of {importResult.held.length} held row(s) are only missing PAN/financials</b> —
-                they'd go through if you tick <b>"Import as incomplete records"</b> above and upload the same sheet again.
-                Use this when KYC and money fields genuinely aren't confirmed yet.
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <b>{importResult.wouldPassAsShell} of {importResult.held.length} held row(s) are only missing PAN/financials.</b>{' '}
+                    Save them now as incomplete records — the sheet stays exactly as uploaded, only PAN/financials will still need
+                    to be filled in later from the Incomplete records queue.
+                  </div>
+                  <BtnPrimary onClick={saveHeldAsIncomplete} disabled={savingIncomplete} className="flex-shrink-0">
+                    {savingIncomplete ? 'Saving…' : `Save ${importResult.wouldPassAsShell} as incomplete records`}
+                  </BtnPrimary>
+                </div>
               </Banner>
             )}
             <div className="mb-1.5">
