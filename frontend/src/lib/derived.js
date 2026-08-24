@@ -189,7 +189,14 @@ export function enrich(base, W) {
 }
 
 /* ---- dated reasons to make contact, gate applied ---- */
-export function triggerList(base) {
+/* `incompleteBase` (raw, unenriched shell records — no PAN/confirmed
+   financials) contributes personal triggers only. A birthday or
+   anniversary is real and worth a call regardless of whether KYC is
+   done; a portfolio trigger (booking anniversary, loan closure, LTCG
+   window) genuinely can't be computed without real unit financials,
+   so those stay complete-owners-only rather than running unitCalc()
+   on nulls and producing a meaningless date. */
+export function triggerList(base, incompleteBase = []) {
   const out = [];
   base.forEach((c) => {
     if (c._blocked) return;
@@ -204,7 +211,12 @@ export function triggerList(base) {
         'Completes 24 months — LTCG / 54F window opens', 'money');
     });
   });
-  return out.sort((a, b) => a.days - b.days || b.c._total - a.c._total);
+  incompleteBase.forEach((c) => {
+    const add = (d, label, kind) => { if (d >= 0 && d <= 90) out.push({ c, days: d, label, kind }); };
+    if (c.captured.dob) add(annivIn(c.dob), 'Birthday', 'personal');
+    if (c.captured.anniv && c.spouseDob) add(annivIn(c.spouseDob), 'Wedding anniversary', 'personal');
+  });
+  return out.sort((a, b) => a.days - b.days || (b.c._total ?? 0) - (a.c._total ?? 0));
 }
 
 /* ---- per-owner document vault ---- */

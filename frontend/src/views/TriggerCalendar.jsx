@@ -18,7 +18,11 @@ function Box({ title, list, openCustomer }) {
               <b>{x.c.name}</b> <Chip cls={kindTone(x.kind)}>{x.kind}</Chip><br />
               <span className="text-[11.5px]">{x.label}</span>
               <div className="text-[10.5px] text-gray-400 dark:text-gray-500">
-                {x.c._project} · gain {inr(x.c._gain)} · <Chip cls={x.c._seg}>{x.c._seg}</Chip>
+                {x.c._seg ? (
+                  <>{x.c._project} · gain {inr(x.c._gain)} · <Chip cls={x.c._seg}>{x.c._seg}</Chip></>
+                ) : (
+                  <>{x.c.units?.[0]?.project} · <Chip cls="m">incomplete record</Chip></>
+                )}
               </div>
             </span>
           </li>
@@ -33,8 +37,8 @@ function Box({ title, list, openCustomer }) {
 }
 
 export default function TriggerCalendar() {
-  const { base, openCustomer } = useApp();
-  const t = triggerList(base);
+  const { base, incompleteRecords, openCustomer } = useApp();
+  const t = triggerList(base, incompleteRecords);
   const nf = nextFest();
   const bk = (lo, hi) => t.filter((x) => x.days >= lo && x.days <= hi);
   const blocked = base.filter((c) => c._blocked).length;

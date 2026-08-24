@@ -40,7 +40,7 @@ const HEALTH_FIELDS = [
 ];
 
 export default function CommandCentre() {
-  const { base, openCustomer, openSegment, setView } = useApp();
+  const { base, incompleteRecords, openCustomer, openSegment, setView } = useApp();
 
   const tot = base.length;
   const live = base.filter((c) => c.status === 'ACTIVE');
@@ -75,7 +75,7 @@ export default function CommandCentre() {
   const disputed = sent.filter((c) => c.statements[0].disputed).length;
   const noConsent = base.filter((c) => c.status === 'ACTIVE' && !c.consent.marketing).length;
   const exited = base.filter((c) => c.status === 'EXITED').length;
-  const soon = triggerList(base).filter((t) => t.days <= 30).slice(0, 7);
+  const soon = triggerList(base, incompleteRecords).filter((t) => t.days <= 30).slice(0, 7);
 
   return (
     <>
@@ -212,7 +212,13 @@ export default function CommandCentre() {
                 <span className="w-20 flex-shrink-0 text-gray-400 dark:text-gray-500 text-xs">{t.days === 0 ? 'today' : `in ${t.days}d`}</span>
                 <span>
                   <b>{t.c.name}</b> — {t.label}
-                  <div className="text-[10.5px] text-gray-400 dark:text-gray-500">{t.c._project} · <Chip cls={t.c._seg}>{t.c._seg}</Chip></div>
+                  <div className="text-[10.5px] text-gray-400 dark:text-gray-500">
+                    {t.c._seg ? (
+                      <>{t.c._project} · <Chip cls={t.c._seg}>{t.c._seg}</Chip></>
+                    ) : (
+                      <>{t.c.units?.[0]?.project} · <Chip cls="m">incomplete record</Chip></>
+                    )}
+                  </div>
                 </span>
               </li>
             )) : (

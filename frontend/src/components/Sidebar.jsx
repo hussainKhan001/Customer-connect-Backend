@@ -35,7 +35,7 @@ export default function Sidebar({ mobileOpen = false, onCloseMobile, collapsed =
   const stale = PROJECTS.filter((p) => daysTo(p.noted) < -VAL_STALE_DAYS).length;
   const counts = {
     base: base.length,
-    triggers: triggerList(base).length,
+    triggers: triggerList(base, incompleteRecords).length,
     intake: ex || '',
     incomplete: incompleteRecords.length || '',
     valuation: stale || '',
