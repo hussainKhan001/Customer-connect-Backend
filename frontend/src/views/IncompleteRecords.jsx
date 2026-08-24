@@ -38,6 +38,8 @@ export default function IncompleteRecords() {
                 <th className={th}>Owner</th>
                 <th className={th}>Mobile</th>
                 <th className={th}>Project / unit</th>
+                <th className={th}>DOB / Anniversary</th>
+                <th className={th}>Occupation</th>
                 <th className={th}>Missing</th>
                 <th className={th} />
               </tr>
@@ -59,6 +61,13 @@ export default function IncompleteRecords() {
                         {u.project}{u.consideration ? ` · ${fmtD(u.bookDate)}` : ''}
                       </div>
                     </td>
+                    <td className={`${td} text-gray-500 dark:text-gray-400`}>
+                      {c.dob ? <>DOB {fmtD(c.dob)}</> : <span className="italic">DOB not captured</span>}
+                      <div>{c.spouseDob ? <>Anniv. {fmtD(c.spouseDob)}</> : <span className="italic">Anniversary not captured</span>}</div>
+                    </td>
+                    <td className={`${td} text-gray-500 dark:text-gray-400`}>
+                      {c.occupation && c.occupation !== 'Not captured' ? c.occupation : <span className="italic">Not captured</span>}
+                    </td>
                     <td className={td}>
                       <div className="flex flex-wrap gap-1">
                         {miss.map((m) => <Chip key={m} cls="r">{m}</Chip>)}
@@ -73,7 +82,7 @@ export default function IncompleteRecords() {
                 );
               })}
               {!incompleteRecords.length && (
-                <tr><td className={td} colSpan={5}>Nothing held — every record has a real PAN and confirmed financials.</td></tr>
+                <tr><td className={td} colSpan={7}>Nothing held — every record has a real PAN and confirmed financials.</td></tr>
               )}
             </tbody>
           </table>

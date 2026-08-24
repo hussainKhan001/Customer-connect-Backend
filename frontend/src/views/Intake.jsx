@@ -73,9 +73,21 @@ export default function Intake() {
           held.push({ rowNumber, row, errs: err.errors || { name: 'Could not save.' } });
         }
       }
-      setImportResult({ total: rows.length, ok, held });
+      /* the single most common upload mistake: financials/PAN genuinely
+         aren't known yet, but "Import as incomplete records" was left
+         unchecked, so every row fails strict validation at once. Rather
+         than make someone read 241 identical-looking error rows to
+         figure that out, check whether the relaxed shell validator
+         would have accepted them and say so directly. */
+      const wouldPassAsShell = !importIncomplete && held.length
+        ? held.filter((h) => Object.keys(validateShellDraft(h.row, base)).length === 0).length
+        : 0;
+
+      setImportResult({ total: rows.length, ok, held, wouldPassAsShell });
       if (ok) toast.success('Import complete', `${ok} of ${rows.length} row(s) added.`);
-      if (held.length) toast.error(`${held.length} row(s) held`, 'Fix these in the sheet and re-upload — nothing partial was guessed.');
+      if (held.length && !wouldPassAsShell) {
+        toast.error(`${held.length} row(s) held`, 'Fix these in the sheet and re-upload — nothing partial was guessed.');
+      }
     } catch (err) {
       toast.error('Could not read the file', err.message || 'Confirm it is the downloaded template, unmodified in structure.');
     } finally {
@@ -157,6 +169,13 @@ export default function Intake() {
         </div>
         {importResult && (
           <div className="text-xs">
+            {importResult.wouldPassAsShell > 0 && (
+              <Banner kind="warn" style={{ margin: '0 0 12px' }}>
+                <b>{importResult.wouldPassAsShell} of {importResult.held.length} held row(s) are only missing PAN/financials</b> —
+                they'd go through if you tick <b>"Import as incomplete records"</b> above and upload the same sheet again.
+                Use this when KYC and money fields genuinely aren't confirmed yet.
+              </Banner>
+            )}
             <div className="mb-1.5">
               <Chip cls="g">{importResult.ok} added</Chip>{' '}
               {importResult.held.length > 0 && <Chip cls="r">{importResult.held.length} held</Chip>}
