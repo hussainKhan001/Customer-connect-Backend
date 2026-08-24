@@ -59,7 +59,7 @@ export function validateShellDraft(d, existingPans = []) {
   }
   if (pd !== null && !(pd >= 0)) e.paid = 'Received to date must be zero or more, or leave it blank.';
 
-  const profile = validateProfilePatch(normalizeProfileInput(d));
+  const profile = validateProfilePatch(normalizeProfileInput(d), { lenient: true });
   Object.assign(e, profile.errors);
 
   return e;
@@ -79,7 +79,7 @@ export function buildShellCustomer(d, id) {
   const pd = d.paid !== undefined && d.paid !== '' ? +d.paid : 0;
   const pan = d.pan ? d.pan.replace(/\s/g, '').toUpperCase() : null;
 
-  const profile = validateProfilePatch(normalizeProfileInput(d)).patch;
+  const profile = validateProfilePatch(normalizeProfileInput(d), { lenient: true }).patch;
   const captured = { dob: false, anniv: false, kid: false, occ: false, addr: false };
   if (profile.dob) captured.dob = true;
   if (profile.spouseDob) captured.anniv = true;

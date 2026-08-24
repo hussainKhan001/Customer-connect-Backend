@@ -125,7 +125,16 @@ export function buildCustomer(d, id) {
    in the body are validated/applied, so the form can save one field
    at a time. Occupation is looked up against OCC so occBand/incomeBand
    (which drive the Capacity score) are always derived, never hand-typed. */
-export function validateProfilePatch(d) {
+/* `opts.lenient` relaxes occupation/community from "must match the
+   fixed list exactly" to "stored as free text if it doesn't" — used
+   only by the shell/incomplete-record path (see validateIncomplete.js),
+   where the source is a raw legacy list with real-world text like
+   "Businessman ( Mustered oil )" rather than a themed <select> the
+   user picked from. The strict "Complete profile" and "Add an owner"
+   paths keep the hard match, since occBand/incomeBand feed the
+   Capacity score and a picked-from-a-list value is what makes that
+   trustworthy there. */
+export function validateProfilePatch(d, opts = {}) {
   const e = {};
   const p = {};
 
@@ -184,15 +193,17 @@ export function validateProfilePatch(d) {
     if (!v) p.occupation = null;
     else {
       const o = OCC.find((x) => x.k === v);
-      if (!o) e.occupation = 'Choose an occupation from the list.';
-      else { p.occupation = o.k; p.occBand = o.b; p.incomeBand = o.band; }
+      if (o) { p.occupation = o.k; p.occBand = o.b; p.incomeBand = o.band; }
+      else if (opts.lenient) p.occupation = v;
+      else e.occupation = 'Choose an occupation from the list.';
     }
   }
 
   if (d.community !== undefined) {
     const v = String(d.community || '').trim();
-    if (v && !COMM.includes(v)) e.community = 'Choose a community from the list.';
-    else p.community = v || null;
+    if (!v || COMM.includes(v)) p.community = v || null;
+    else if (opts.lenient) p.community = v;
+    else e.community = 'Choose a community from the list.';
   }
 
   if (d.consent !== undefined) {
