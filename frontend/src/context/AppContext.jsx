@@ -69,16 +69,18 @@ export function AppProvider({ children }) {
   const [stmtId, setStmtId] = useState(null);
 
   /* "shell" records (see backend/src/lib/validateIncomplete.js) have no
-     PAN and/or no confirmed unit financials — enrich()/score()/gate()/
-     confidence() all assume those are real, so incomplete records are
-     filtered out before enrich runs rather than taught to tolerate
-     nulls throughout that whole pipeline. They still live in `raw` and
-     surface separately via incompleteRecords, for the dedicated queue. */
-  const completeRaw = useMemo(() => raw.filter((c) => !c.incomplete), [raw]);
+     PAN and/or no confirmed unit financials. They used to be held out
+     of the scored owner base entirely; enrich()/unitCalc()/score() are
+     now null-safe (a unit with no confirmed area/rate/consideration
+     contributes 0 gain/value rather than a misleading negative number),
+     so every record goes straight into `base` — nothing sits in a
+     separate holding queue waiting to be "completed" first.
+     incompleteRecords still identifies which ones are missing PAN/
+     financials, for the Incomplete Records page's own reference view. */
   const incompleteRecords = useMemo(() => raw.filter((c) => c.incomplete), [raw]);
 
   /* the only expensive computation in the app — memoised on its inputs */
-  const base = useMemo(() => enrich(completeRaw, weights), [completeRaw, weights]);
+  const base = useMemo(() => enrich(raw, weights), [raw, weights]);
   const byId = useCallback((id) => base.find((c) => c.id === id), [base]);
 
   const setView = useCallback((v) => {

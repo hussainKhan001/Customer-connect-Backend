@@ -6,21 +6,35 @@
 import { D, TODAY, addD, yrs, daysTo, annivIn, nextFest, VAL_STALE_DAYS } from './core.js';
 
 /* ---- one unit's position ---- */
+/* Null-safe: a unit imported without a confirmed saleable area, rate
+   or consideration (a shell/incomplete record now shown directly in
+   the owner base rather than held out of it) has no real position to
+   compute — currentValue/gain/paidPct all come out 0 rather than a
+   misleading negative number from mixing a real consideration against
+   a zeroed-out area. `hasFinancials` marks that distinction for the
+   UI so "0" can be shown as "not confirmed" rather than as a real
+   zero-gain investment. */
 export function unitCalc(u) {
-  const v = Math.max(u.val.circle, u.val.resale);
-  const cv = v * u.saleable;
-  const gain = cv - u.consideration;
-  const held = yrs(u.bookDate, u.exited ? u.exitDate : TODAY);
+  const hasArea = u.saleable > 0;
+  const hasConsideration = u.consideration > 0;
+  const hasFinancials = hasArea && u.rate > 0 && hasConsideration;
+  const v = Math.max(u.val?.circle || 0, u.val?.resale || 0);
+  const cv = hasArea ? v * u.saleable : 0;
+  const gain = hasFinancials ? cv - u.consideration : 0;
+  const bookDate = u.bookDate || TODAY;
+  const held = yrs(bookDate, u.exited ? u.exitDate : TODAY);
+  const paid = u.paid || 0;
   return {
     ...u,
+    hasFinancials,
     valueRate: v, currentValue: cv, gain,
-    gainPct: (gain / u.consideration) * 100,
-    cagr: held > 0.5 ? (Math.pow(cv / u.consideration, 1 / held) - 1) * 100 : 0,
+    gainPct: hasFinancials ? (gain / u.consideration) * 100 : 0,
+    cagr: hasFinancials && held > 0.5 ? (Math.pow(cv / u.consideration, 1 / held) - 1) * 100 : 0,
     heldYrs: held,
-    outstanding: u.consideration - u.paid,
-    paidPct: (u.paid / u.consideration) * 100,
-    ltcg: new Date(D(u.bookDate).getFullYear() + 2, D(u.bookDate).getMonth(), D(u.bookDate).getDate()),
-    valStale: daysTo(u.val.notedOn) < -VAL_STALE_DAYS,
+    outstanding: hasConsideration ? u.consideration - paid : 0,
+    paidPct: hasConsideration ? (paid / u.consideration) * 100 : 0,
+    ltcg: new Date(D(bookDate).getFullYear() + 2, D(bookDate).getMonth(), D(bookDate).getDate()),
+    valStale: daysTo(u.val?.notedOn) < -VAL_STALE_DAYS,
   };
 }
 
@@ -28,7 +42,7 @@ export function unitCalc(u) {
 export function roll(c) {
   const all = c.units.map(unitCalc);
   const live = all.filter((u) => !u.exited);
-  const S = (a, k) => a.reduce((s, u) => s + u[k], 0);
+  const S = (a, k) => a.reduce((s, u) => s + (u[k] || 0), 0);
   return {
     all, units: live,
     consideration: S(live, 'consideration'),
@@ -100,7 +114,7 @@ export function score(c, W = DEFAULT_W) {
   const r = roll(c);
   if (!r.units.length) return { capacity: 0, trust: 0, timing: 0, engagement: 0, total: 0 };
 
-  const paidPct = r.paid / r.consideration;
+  const paidPct = r.consideration ? r.paid / r.consideration : 0;
   const closed = r.units.every((u) => u.loan.closed || u.loan.selfFunded);
   const prepay = r.units.some((u) => u.loan.prepaid);
   const capacity = Math.min(100,
@@ -179,7 +193,7 @@ export function enrich(base, W) {
       _s: s, _total: s.total, _seg: segOf(c, W, g, s), _g: g, _blocked: !g.open,
       _gain: r.gain, _value: r.value, _consid: r.consideration, _paid: r.paid,
       _out: r.outstanding, _live: r.units.length, _conf: confidence(c).pct,
-      _rate: r.units.length ? r.units[0].rate : 0,
+      _rate: r.units.length ? (r.units[0].rate || 0) : 0,
       _vrate: r.units.length ? r.units[0].valueRate : 0,
       _project: c.units[0].project, _unit: c.units[0].unit, _book: c.units[0].bookDate,
       _held: r.units.length ? Math.max(...r.units.map((u) => u.heldYrs)) : 0,
