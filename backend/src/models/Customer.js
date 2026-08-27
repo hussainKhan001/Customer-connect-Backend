@@ -28,8 +28,8 @@ const ValSchema = new Schema({
 }, { _id: false });
 
 const UnitSchema = new Schema({
-  unit: { type: String, required: true },
-  project: { type: String, required: true },
+  unit: { type: String, default: null },
+  project: { type: String, default: null },
   entity: String,
   type: String,
   carpet: Number,
@@ -148,7 +148,7 @@ const CustomerSchema = new Schema({
   statusSince: { type: Date, default: null },
   statusNote: { type: String, default: null },
   salutation: String,
-  name: { type: String, required: true },
+  name: { type: String, default: '' },
   coApplicant: { type: String, default: null },
   coRelation: { type: String, default: 'Spouse' },
   coOnAgreement: { type: Boolean, default: false },
@@ -158,7 +158,7 @@ const CustomerSchema = new Schema({
   pan: { type: String, required: false, default: null },
   aadhaarHeld: { type: Boolean, default: false },
   kycDate: { type: Date, default: null },
-  mobile: { type: String, required: true },
+  mobile: { type: String, default: '' },
   email: { type: String, default: null },
   corrAddr: String,
   city: String,

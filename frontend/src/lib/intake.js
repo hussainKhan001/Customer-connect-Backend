@@ -3,7 +3,7 @@
    the live form. Reject rather than guess: a row that does not
    reconcile is held, never adjusted.
    ===================================================================== */
-import { TODAY, daysTo, inrF, projByName, PROJECTS, VAL_STALE_DAYS } from './core.js';
+import { daysTo, PROJECTS, VAL_STALE_DAYS } from './core.js';
 
 export const CHECKS = [
   ['RATE_AREA', 'Rate × area less discount equals consideration',
@@ -108,77 +108,20 @@ export const SAMPLE_DRAFT = () => {
   };
 };
 
-export function validateDraft(d, base = []) {
-  const e = {};
-  if (!d.name || d.name.trim().length < 3) e.name = 'Enter the full name as it appears on the agreement.';
-
-  const pan = (d.pan || '').replace(/\s/g, '');
-  if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/i.test(pan)) {
-    e.pan = 'PAN must be 5 letters, 4 digits, 1 letter — it is the primary dedupe key.';
-  } else if (base.some((c) => c.pan.toUpperCase() === pan.toUpperCase())) {
-    e.pan = 'Duplicate PAN — this owner already exists. Deduplicate on PAN first, never on name.';
-  }
-
-  if (!/^\+?[0-9\s]{10,14}$/.test(d.mobile || '')) e.mobile = 'Enter a 10-digit mobile — the secondary dedupe key.';
-  if (!d.project || !projByName(d.project)) e.project = 'Choose the project so the valuation note can be attached.';
-  if (!d.unit) e.unit = 'Unit number is required.';
-
-  const sa = +d.saleable, rt = +d.rate, dc = +d.discount || 0, co = +d.consideration, pd = +d.paid;
-  if (!(sa > 0)) e.saleable = 'Saleable area must be a positive number.';
-  if (!(rt > 0)) e.rate = 'Booking rate must be a positive number.';
-  if (!(co > 0)) e.consideration = 'Consideration is required.';
-  if (sa > 0 && rt > 0 && co > 0 && Math.abs(rt * sa - dc - co) > 1) {
-    e.consideration = 'Does not reconcile. rate × area − discount = ' + inrF(rt * sa - dc) +
-      ', you entered ' + inrF(co) + '. Held rather than adjusted — the variance is either an unrecorded discount or an error.';
-  }
-  if (!d.bookDate) e.bookDate = 'Booking date is required.';
-  else if (new Date(d.bookDate) > TODAY) e.bookDate = 'Booking date cannot be in the future.';
-  if (!(pd >= 0)) e.paid = 'Received to date is required — enter 0 if nothing has been received.';
-  else if (co > 0 && pd > co + 1) e.paid = 'Received exceeds consideration by ' + inrF(pd - co) + '. Rejected, not adjusted.';
-
-  return e;
+/* Validation on import is intentionally OFF (both the single-owner
+   form and the bulk-sheet path below) — a row is never held for
+   content reasons. The equivalent, permissive coercion (bad numbers
+   and dates become null, an unmatched project falls back to the
+   first known one) happens server-side in buildCustomer()/
+   buildShellCustomer(), which is what actually decides what gets
+   written; these two stay as no-ops so Intake.jsx's validate-then-
+   submit shape doesn't need to change. */
+export function validateDraft() {
+  return {};
 }
 
-/* Client-side mirror of backend/src/lib/validateIncomplete.js's
-   validateShellDraft — for the "import as incomplete records" bulk
-   path (see Intake.jsx), where only name/mobile/project/unit are
-   mandatory and PAN/financials are optional-but-validated-if-present.
-   The server re-validates independently either way. */
-export function validateShellDraft(d, base = []) {
-  const e = {};
-  if (!d.name || d.name.trim().length < 3) e.name = 'Enter the full name as it appears on the agreement.';
-  if (!/^\+?[0-9\s]{10,14}$/.test(d.mobile || '')) e.mobile = 'Enter a 10-digit mobile.';
-  if (!d.project || !projByName(d.project)) e.project = 'Choose the project so the valuation note can be attached.';
-  if (!d.unit) e.unit = 'Unit number is required.';
-
-  const pan = (d.pan || '').replace(/\s/g, '');
-  if (pan) {
-    if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/i.test(pan)) {
-      e.pan = 'PAN must be 5 letters, 4 digits, 1 letter, or leave it blank until known.';
-    } else if (base.some((c) => c.pan && c.pan.toUpperCase() === pan.toUpperCase())) {
-      e.pan = 'Duplicate PAN — this owner already exists. Deduplicate on PAN first, never on name.';
-    }
-  }
-
-  const sa = d.saleable !== undefined && d.saleable !== '' ? +d.saleable : null;
-  const rt = d.rate !== undefined && d.rate !== '' ? +d.rate : null;
-  const dc = +d.discount || 0;
-  const co = d.consideration !== undefined && d.consideration !== '' ? +d.consideration : null;
-  const pd = d.paid !== undefined && d.paid !== '' ? +d.paid : null;
-
-  if (sa !== null && !(sa > 0)) e.saleable = 'Saleable area must be a positive number, or leave it blank.';
-  if (rt !== null && !(rt > 0)) e.rate = 'Booking rate must be a positive number, or leave it blank.';
-  if (co !== null && !(co > 0)) e.consideration = 'Consideration must be a positive number, or leave it blank.';
-  if (sa !== null && rt !== null && co !== null && Math.abs(rt * sa - dc - co) > 1) {
-    e.consideration = 'Does not reconcile with rate × area − discount. Leave consideration blank rather than guess it.';
-  }
-  if (d.bookDate) {
-    if (Number.isNaN(new Date(d.bookDate).getTime())) e.bookDate = 'Enter a valid date, or leave it blank.';
-    else if (new Date(d.bookDate) > TODAY) e.bookDate = 'Booking date cannot be in the future.';
-  }
-  if (pd !== null && !(pd >= 0)) e.paid = 'Received to date must be zero or more, or leave it blank.';
-
-  return e;
+export function validateShellDraft() {
+  return {};
 }
 
 /* buildCustomer() used to live here and write straight into the
