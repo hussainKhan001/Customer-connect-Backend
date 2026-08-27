@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import Swal from 'sweetalert2';
-import { Plus } from 'lucide-react';
+import { Plus, AlertTriangle } from 'lucide-react';
 import { Card, Chip, Banner, TableWrap, BtnPrimary, rowActionCls } from '../components/Ui.jsx';
 import ThemedSelect from '../components/theme/ThemedSelect.jsx';
 import UserModal from '../components/UserModal.jsx';
 import UserPermissionsModal from '../components/UserPermissionsModal.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useApp } from '../context/AppContext.jsx';
 import { ROLES } from '../lib/reference.js';
 import { apiFetch } from '../lib/api.js';
 import { toast } from '../lib/toast.js';
@@ -17,11 +18,13 @@ const td = 'px-4 py-3 border-b border-gray-100 dark:border-gray-700/60 align-top
 
 export default function UserManagement() {
   const { user: me } = useAuth();
+  const { raw, deleteAllCustomers } = useApp();
   const [users, setUsers] = useState(null);
   const [loadError, setLoadError] = useState(null);
   const [addOpen, setAddOpen] = useState(false);
   const [permUser, setPermUser] = useState(null);
   const [busyId, setBusyId] = useState(null);
+  const [deletingAll, setDeletingAll] = useState(false);
 
   const load = () => {
     apiFetch('/api/users')
@@ -95,6 +98,36 @@ export default function UserManagement() {
       toast.error('Could not reset password', err.message);
     } finally {
       setBusyId(null);
+    }
+  };
+
+  /* type-to-confirm, same reasoning as GitHub's own repo-delete flow —
+     this wipes every customer record at once and cannot be undone.
+     The server independently requires the exact same phrase in the
+     request body, so this dialog isn't the only thing standing
+     between a stray click and the whole owner base disappearing. */
+  const deleteAllData = async () => {
+    const total = raw.length;
+    const { value: typed } = await Swal.fire({
+      icon: 'error',
+      title: `Delete all ${total} customer record${total === 1 ? '' : 's'}?`,
+      html: `This permanently removes <b>every owner</b> — complete and incomplete — and cannot be undone.<br/>Type <code>DELETE ALL</code> to confirm.`,
+      input: 'text',
+      inputPlaceholder: 'DELETE ALL',
+      showCancelButton: true,
+      confirmButtonText: 'Delete everything',
+      confirmButtonColor: '#dc2626',
+      inputValidator: (v) => (v !== 'DELETE ALL' ? 'Type DELETE ALL exactly to confirm' : undefined),
+    });
+    if (typed !== 'DELETE ALL') return;
+    setDeletingAll(true);
+    try {
+      const body = await deleteAllCustomers();
+      toast.success('All customer data deleted', `${body.deletedCount} record(s) removed.`);
+    } catch (err) {
+      toast.error('Could not delete', err.message);
+    } finally {
+      setDeletingAll(false);
     }
   };
 
@@ -178,6 +211,25 @@ export default function UserManagement() {
       <BtnPrimary className="inline-flex items-center gap-1.5" onClick={() => setAddOpen(true)}>
         <Plus className="w-3.5 h-3.5" /> Add user
       </BtnPrimary>
+
+      <Card title="Danger zone" hint="Irreversible">
+        <div className="flex items-start justify-between gap-4 flex-wrap">
+          <div className="flex items-start gap-2.5 max-w-xl">
+            <AlertTriangle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
+            <p className="text-[12.5px] text-gray-600 dark:text-gray-400">
+              Permanently deletes every customer record — complete and incomplete — from the database.
+              This cannot be undone. Use only to clear test/import data before a fresh upload.
+            </p>
+          </div>
+          <button
+            className="shrink-0 px-3.5 py-2 rounded-lg text-[12.5px] font-semibold bg-red-600 hover:bg-red-700 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={deleteAllData}
+            disabled={deletingAll || !raw.length}
+          >
+            {deletingAll ? 'Deleting…' : `Delete all customer data${raw.length ? ` (${raw.length})` : ''}`}
+          </button>
+        </div>
+      </Card>
 
       {addOpen && (
         <UserModal onClose={() => setAddOpen(false)} onCreated={(u) => setUsers((prev) => [...(prev || []), u])} />

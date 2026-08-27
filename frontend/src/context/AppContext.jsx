@@ -200,6 +200,24 @@ export function AppProvider({ children }) {
     return responseBody;
   }, [patchCustomer]);
 
+  /* wipes every customer record — the same operation the one-off
+     migration scripts were doing by hand all session, now a real
+     button (see UserManagement.jsx). Doesn't call patchCustomer since
+     there's no single updated record to fold back in; the realtime
+     Change Stream listener picks up the resulting empty collection
+     and refetches on its own, same as any other write. */
+  const deleteAllCustomers = useCallback(async () => {
+    const res = await apiFetch('/api/customers', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ confirm: 'DELETE ALL CUSTOMERS' }),
+    });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || 'Request failed');
+    setRaw([]);
+    return body;
+  }, []);
+
   const value = {
     base, byId, raw, incompleteRecords,
     loading, loadError, live,
@@ -210,6 +228,7 @@ export function AppProvider({ children }) {
     filters, setFilters, clearFilters,
     stmtId, setStmtId,
     openCustomer, openSegment, openStatement, addCustomer, addIncompleteCustomer, patchCustomer, updateProfile, mutateCustomer,
+    deleteAllCustomers,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

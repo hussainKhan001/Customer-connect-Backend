@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import multer from 'multer';
 import Customer from '../models/Customer.js';
-import { nextCustomerId } from '../models/Counter.js';
+import Counter, { nextCustomerId } from '../models/Counter.js';
 import { isCloudinaryConfigured, uploadBuffer, deleteAsset } from '../lib/cloudinary.js';
 import { validateDraft, buildCustomer, validateProfilePatch } from '../lib/validate.js';
 import { validateShellDraft, buildShellCustomer, validateCompletion } from '../lib/validateIncomplete.js';
@@ -430,6 +430,23 @@ router.patch('/:id/units/:index/exit', requirePermission('Owner status and trans
 
   await customer.save();
   res.json(customer);
+}));
+
+/* Wipes every customer record and resets the id counter back to 0 so
+   the next import starts clean at NEO-C-1 — the same operation the
+   one-off migration scripts (backend/clearAllCustomers.js) were doing
+   by hand all session. Genuinely irreversible and affects every owner
+   at once, so it's gated on the same permission as account management
+   (Board/CEO only) and requires the exact confirmation phrase in the
+   body as a server-side backstop behind the UI's own confirm dialog —
+   a stray or scripted call with an empty body does nothing. */
+router.delete('/', requirePermission('User management — add/edit/deactivate accounts'), asyncHandler(async (req, res) => {
+  if (req.body?.confirm !== 'DELETE ALL CUSTOMERS') {
+    return res.status(400).json({ error: 'Missing or incorrect confirmation phrase.' });
+  }
+  const { deletedCount } = await Customer.deleteMany({});
+  await Counter.findOneAndUpdate({ name: 'customerSeq' }, { $set: { seq: 0 } }, { upsert: true });
+  res.json({ deletedCount });
 }));
 
 export default router;
