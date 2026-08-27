@@ -245,10 +245,10 @@ export function docsFor(c) {
 export function activityFor(c) {
   const a = [];
   c.units.forEach((u) => {
-    a.push({ d: u.bookDate, w: 'Sales', t: 'Booked ' + u.unit + ' at ₹' + u.rate.toLocaleString('en-IN') + ' per sq.ft.', by: 'Sales' });
+    a.push({ d: u.bookDate, w: 'Sales', t: 'Booked ' + u.unit + ' at ' + (u.rate != null ? '₹' + u.rate.toLocaleString('en-IN') + ' per sq.ft.' : 'an unrecorded rate'), by: 'Sales' });
     if (u.regDate) a.push({ d: u.regDate, w: 'Legal', t: 'Registry completed — ' + u.unit, by: 'Legal' });
     if (u.loan.closedOn) a.push({ d: u.loan.closedOn, w: 'Finance', t: u.loan.bank + ' loan on ' + u.unit + (u.loan.prepaid ? ' foreclosed by customer' : ' closed on schedule'), by: 'Bank feed' });
-    if (u.exited) a.push({ d: u.exitDate, w: 'System', t: 'Owner status changed to Exited. Unit resold on the open market at approx. ₹' + u.exitRate.toLocaleString('en-IN') + '/sq.ft.', by: 'Legal' });
+    if (u.exited) a.push({ d: u.exitDate, w: 'System', t: 'Owner status changed to Exited. Unit resold on the open market at approx. ' + (u.exitRate != null ? '₹' + u.exitRate.toLocaleString('en-IN') + '/sq.ft.' : 'an unrecorded rate'), by: 'Legal' });
   });
   if (c.consent.date) a.push({ d: c.consent.date, w: 'Consent', t: 'DPDP consent recorded — marketing ' + (c.consent.marketing ? 'granted' : 'DECLINED'), by: 'CRM' });
   if (c.nps) a.push({ d: c.npsDate, w: 'Survey', t: 'NPS captured — ' + c.nps + '/10', by: 'CRM' });

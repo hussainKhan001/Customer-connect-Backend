@@ -66,6 +66,24 @@ export const PROJECTS = [
 export const projByName = (n) => PROJECTS.find((p) => p.name === n);
 export const ENTITIES = [...new Set(PROJECTS.map((p) => p.entity))];
 
+/* the single source of truth for whether a customer is still a
+   "shell"/incomplete record — always recomputed from the actual
+   fields, never trusted from a client-supplied flag, and used by
+   BOTH the strict create path (validate.js) and the shell/incomplete
+   path (validateIncomplete.js) so a record's completeness never
+   depends on which endpoint happened to create it. Shared here
+   rather than living in either validate file to avoid a circular
+   import between the two. */
+export function computeIncomplete(pan, unit) {
+  if (!pan) return true;
+  if (!unit) return true;
+  if (!(unit.saleable > 0)) return true;
+  if (!(unit.rate > 0)) return true;
+  if (!(unit.consideration > 0)) return true;
+  if (!unit.bookDate) return true;
+  return false;
+}
+
 /* ---- sample-data vocabulary ---- */
 export const F = ['Rahul', 'Anil', 'Sunita', 'Deepak', 'Manish', 'Pooja', 'Vikram', 'Neha', 'Rajesh', 'Kavita', 'Sandeep', 'Rekha', 'Amit', 'Shalini', 'Praveen', 'Mamta', 'Ashok', 'Jyoti', 'Nitin', 'Archana', 'Sanjay', 'Ritu', 'Gaurav', 'Seema', 'Harish', 'Divya', 'Mukesh', 'Anjali', 'Ravi', 'Preeti', 'Yogesh', 'Swati', 'Alok', 'Nidhi', 'Brijesh', 'Meena', 'Sachin', 'Vandana', 'Dinesh', 'Sarita', 'Kailash', 'Bhavna', 'Naresh', 'Suman'];
 export const L = ['Sharma', 'Gupta', 'Agrawal', 'Jain', 'Tiwari', 'Verma', 'Yadav', 'Singh', 'Shrivastava', 'Rathore', 'Khandelwal', 'Saxena', 'Dubey', 'Mishra', 'Chouhan', 'Pandey', 'Bansal', 'Goyal', 'Sengar', 'Bhargava'];

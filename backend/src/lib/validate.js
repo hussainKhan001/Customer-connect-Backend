@@ -9,7 +9,7 @@
    mobile becomes an empty value) so the app never crashes on garbage
    input — but nothing is ever guessed into a "valid-looking" number
    the way the old reconciliation check was designed to prevent. */
-import { TODAY, projByName, PROJECTS, OCC } from './core.js';
+import { TODAY, projByName, PROJECTS, OCC, computeIncomplete } from './core.js';
 
 /* the bulk-import sheet (see FULL_FORM_FIELDS in the frontend's
    intake.js) uses flat Yes/No text columns for booleans and consent,
@@ -72,6 +72,17 @@ export function buildCustomer(d, id) {
   if (profile.corrAddr) captured.addr = true;
   const hasConsent = profile.consent && Object.entries(profile.consent).some(([k, v]) => k !== 'purpose' && v === true);
 
+  const unit = {
+    unit: d.unit ? String(d.unit).trim() : null, project: p.name, entity: p.entity, type: '—',
+    carpet: sa != null ? Math.round(sa * 0.68) : null, saleable: sa, loading: 32,
+    bookDate: bd, agrDate: null, regDate: null, possDate: null,
+    rate: rt, discount: dc, consideration: co, paid: pd ?? 0,
+    receipts: pd ? 1 : 0, bounced: 0, lastReceipt: bd,
+    loan: { bank: null, tenure: 0, start: null, closure: null, closed: true, prepaid: false, selfFunded: true },
+    val: { ask: p.ask, resale: p.resale, circle: p.circle, notedOn: p.noted, basis: p.basis, by: p.by },
+    exited: false,
+  };
+
   return {
     id, status: 'ACTIVE', statusSince: bd || TODAY, statusNote: null,
     salutation: d.salutation ? String(d.salutation).trim() : 'Mr.',
@@ -88,18 +99,16 @@ export function buildCustomer(d, id) {
       ? { ...profile.consent, date: hasConsent ? TODAY : null }
       : { whatsapp: false, sms: false, email: false, marketing: false, date: null, purpose: null, children: false },
     source: d.source ? String(d.source).trim() : 'Direct walk-in', referredBy: null,
-    units: [{
-      unit: d.unit ? String(d.unit).trim() : null, project: p.name, entity: p.entity, type: '—',
-      carpet: sa != null ? Math.round(sa * 0.68) : null, saleable: sa, loading: 32,
-      bookDate: bd, agrDate: null, regDate: null, possDate: null,
-      rate: rt, discount: dc, consideration: co, paid: pd ?? 0,
-      receipts: pd ? 1 : 0, bounced: 0, lastReceipt: bd,
-      loan: { bank: null, tenure: 0, start: null, closure: null, closed: true, prepaid: false, selfFunded: true },
-      val: { ask: p.ask, resale: p.resale, circle: p.circle, notedOn: p.noted, basis: p.basis, by: p.by },
-      exited: false,
-    }],
+    units: [unit],
     complaints: [], openComplaints: [], nps: null, npsDate: null, litigation: false,
     referrals: [], events: [], siteVisits: 0, portalLast: null, statements: [],
+    /* recomputed here rather than trusted from validateDraft (which no
+       longer rejects anything) — a customer created through this
+       strict route with a blank rate/saleable/consideration must
+       still come out `incomplete`, or it flows into the scored owner
+       base with a null rate and crashes anything that formats it
+       (e.g. activityFor()'s u.rate.toLocaleString()). */
+    incomplete: computeIncomplete(pan, unit),
   };
 }
 

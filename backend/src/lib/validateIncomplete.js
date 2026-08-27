@@ -4,8 +4,10 @@
    shell record) is intentionally OFF, same as validate.js — nothing
    here rejects a row; a bad/missing value is coerced to null or a
    safe fallback instead. */
-import { TODAY, projByName, PROJECTS } from './core.js';
+import { TODAY, projByName, PROJECTS, computeIncomplete } from './core.js';
 import { validateProfilePatch, normalizeProfileInput } from './validate.js';
+
+export { computeIncomplete };
 
 function numOrNull(v) {
   if (v === undefined || v === null || v === '') return null;
@@ -16,19 +18,6 @@ function dateOrNull(v) {
   if (!v) return null;
   const dt = new Date(v);
   return Number.isNaN(dt.getTime()) ? null : dt;
-}
-
-/* the single source of truth for whether a customer is still a shell —
-   always recomputed from the real fields, never trusted from a client-
-   supplied flag, so it can't drift out of sync with reality. */
-export function computeIncomplete(pan, unit) {
-  if (!pan) return true;
-  if (!unit) return true;
-  if (!(unit.saleable > 0)) return true;
-  if (!(unit.rate > 0)) return true;
-  if (!(unit.consideration > 0)) return true;
-  if (!unit.bookDate) return true;
-  return false;
 }
 
 /* kept as a function so the route's validate-then-build shape doesn't
