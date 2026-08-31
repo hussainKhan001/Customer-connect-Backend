@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Pencil } from 'lucide-react';
-import { Card, Chip, TableWrap, rowActionCls } from '../../components/Ui.jsx';
+import { Card, Chip, Banner, TableWrap, BtnPrimary, rowActionCls } from '../../components/Ui.jsx';
 import ValuationModal from '../../components/ValuationModal.jsx';
 import ExitModal from '../../components/ExitModal.jsx';
 import MilestonesModal from '../../components/MilestonesModal.jsx';
+import CompleteRecordModal from '../../components/CompleteRecordModal.jsx';
 import { fmtD, inr, inrF, psf } from '../../lib/core.js';
 import { roll } from '../../lib/derived.js';
 
@@ -12,9 +13,19 @@ export default function MPortfolio({ c }) {
   const [valIdx, setValIdx] = useState(null);
   const [exitIdx, setExitIdx] = useState(null);
   const [milestoneIdx, setMilestoneIdx] = useState(null);
+  const [completing, setCompleting] = useState(false);
 
   return (
     <>
+      {c.incomplete && (
+        <Banner kind="warn">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <span>PAN and/or unit financials (area, rate, consideration, booking date) were never captured for this owner — that's why they show as ₹0 below. Fill them in to make this a fully scored record.</span>
+            <BtnPrimary className="shrink-0" onClick={() => setCompleting(true)}>Complete record</BtnPrimary>
+          </div>
+        </Banner>
+      )}
+
       <Card title="Units" hint="rollup across all three entities" pad={false}>
         <TableWrap>
           <table className="w-full border-collapse">
@@ -145,6 +156,7 @@ export default function MPortfolio({ c }) {
       {milestoneIdx !== null && (
         <MilestonesModal customer={c} unit={r.all[milestoneIdx]} unitIndex={milestoneIdx} onClose={() => setMilestoneIdx(null)} />
       )}
+      {completing && <CompleteRecordModal customer={c} onClose={() => setCompleting(false)} />}
     </>
   );
 }
