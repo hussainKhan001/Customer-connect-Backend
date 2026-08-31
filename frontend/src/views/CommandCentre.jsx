@@ -46,8 +46,13 @@ export default function CommandCentre() {
   const live = base.filter((c) => c.status === 'ACTIVE');
   const inv = live.reduce((s, c) => s + c._consid, 0);
   const val = live.reduce((s, c) => s + c._value, 0);
-  const gain = val - inv;
-  const gainPct = (gain / inv) * 100;
+  /* Not val - inv: a shell record can carry a real consideration with no
+     confirmed area/rate yet, so its value is 0 while its consideration
+     is real — subtracting the totals would show a large fake loss.
+     _gain is already null-safe per record (see unitCalc in derived.js),
+     so summing it keeps those records at 0 gain instead. */
+  const gain = live.reduce((s, c) => s + c._gain, 0);
+  const gainPct = inv ? (gain / inv) * 100 : 0;
 
   const segGain = (k) => base.filter((c) => c._seg === k).reduce((s, c) => s + c._gain, 0);
   const cnt = (k) => base.filter((c) => c._seg === k).length;
