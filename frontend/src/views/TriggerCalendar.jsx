@@ -1,6 +1,6 @@
 import { useApp } from '../context/AppContext.jsx';
 import { Card, Chip, Banner, Timeline } from '../components/Ui.jsx';
-import { inr, nextFest } from '../lib/core.js';
+import { inr, nextFest, addD, fmtDM, TODAY } from '../lib/core.js';
 import { triggerList } from '../lib/derived.js';
 
 const kindTone = (k) => (k === 'money' ? 'g' : k === 'personal' ? 'm' : 'w');
@@ -13,7 +13,10 @@ function Box({ title, list, openCustomer }) {
           <li key={i}
               className="flex gap-2.5 py-2 border-b border-gray-100 dark:border-gray-700/60 last:border-0 text-sm hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors cursor-pointer"
               onClick={() => openCustomer(x.c.id)}>
-            <span className="w-20 flex-shrink-0 text-gray-400 dark:text-gray-500 text-xs">{x.days === 0 ? 'today' : `${x.days}d`}</span>
+            <span className="w-20 flex-shrink-0 text-gray-400 dark:text-gray-500 text-xs">
+              {x.days === 0 ? 'today' : `${x.days}d`}
+              <div className="text-[10px] whitespace-nowrap">{fmtDM(addD(TODAY, x.days))}</div>
+            </span>
             <span>
               <b>{x.c.name}</b> <Chip cls={kindTone(x.kind)}>{x.kind}</Chip><br />
               <span className="text-[11.5px]">{x.label}</span>

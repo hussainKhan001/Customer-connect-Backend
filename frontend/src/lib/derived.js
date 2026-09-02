@@ -214,10 +214,13 @@ export function triggerList(base, incompleteBase = []) {
   const out = [];
   base.forEach((c) => {
     if (c._blocked) return;
-    const add = (d, label, kind) => { if (d >= 0 && d <= 90) out.push({ c, days: d, label, kind }); };
+    const add = (d, label, kind) => { if (d != null && d >= 0 && d <= 90) out.push({ c, days: d, label, kind }); };
     if (c.captured.dob) add(annivIn(c.dob), 'Birthday', 'personal');
     if (c.captured.anniv && c.spouseDob) add(annivIn(c.spouseDob), 'Wedding anniversary', 'personal');
-    c.units.filter((u) => !u.exited).forEach((u) => {
+    /* a shell/incomplete unit (no confirmed bookDate) has no real
+       booking/registry/LTCG anniversary to compute — skip it here
+       rather than deriving a trigger from a null or epoch date. */
+    c.units.filter((u) => !u.exited && u.bookDate).forEach((u) => {
       add(annivIn(u.bookDate), 'Booking anniversary — year ' + Math.max(1, TODAY.getFullYear() - D(u.bookDate).getFullYear()), 'portfolio');
       if (u.regDate) add(annivIn(u.regDate), 'Registry anniversary', 'portfolio');
       if (!u.loan.closed && u.loan.closure) add(daysTo(u.loan.closure), 'Home loan closes — EMI capacity frees up', 'money');
@@ -226,7 +229,7 @@ export function triggerList(base, incompleteBase = []) {
     });
   });
   incompleteBase.forEach((c) => {
-    const add = (d, label, kind) => { if (d >= 0 && d <= 90) out.push({ c, days: d, label, kind }); };
+    const add = (d, label, kind) => { if (d != null && d >= 0 && d <= 90) out.push({ c, days: d, label, kind }); };
     if (c.captured.dob) add(annivIn(c.dob), 'Birthday', 'personal');
     if (c.captured.anniv && c.spouseDob) add(annivIn(c.spouseDob), 'Wedding anniversary', 'personal');
   });
