@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Card, Chip, TableWrap, btnGhost } from './Ui.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
-import { cr, inr, fmtD, daysTo, PROJECTS, VAL_STALE_DAYS } from '../lib/core.js';
-import { unitCalc } from '../lib/derived.js';
+import { cr, inr, fmtD, daysTo, PROJECTS, VAL_STALE_DAYS } from '../utils/core.js';
+import { unitCalc } from '../utils/derived.js';
 
 /* Two series, so the palette is categorical and validated:
    #F97316 / #B91C1C — CVD ΔE 20.4 (deutan), normal-vision ΔE 21.0. Orange sits at

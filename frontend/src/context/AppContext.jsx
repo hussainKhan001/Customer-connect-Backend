@@ -7,8 +7,8 @@
    ===================================================================== */
 import { createContext, useContext, useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { io } from 'socket.io-client';
-import { enrich, DEFAULT_W } from '../lib/derived.js';
-import { apiFetch, API_BASE } from '../lib/api.js';
+import { enrich, DEFAULT_W } from '../utils/derived.js';
+import { apiFetch, API_BASE } from '../utils/api.js';
 import { useAuth } from './AuthContext.jsx';
 
 const AppContext = createContext(null);

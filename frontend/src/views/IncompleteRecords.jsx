@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Card, Chip, Banner, TableWrap, rowActionCls } from '../components/Ui.jsx';
 import { useApp } from '../context/AppContext.jsx';
-import { fmtD } from '../lib/core.js';
+import { fmtD } from '../utils/core.js';
 import CompleteRecordModal from '../components/CompleteRecordModal.jsx';
 
 const th = 'text-left text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-900/40 whitespace-nowrap';

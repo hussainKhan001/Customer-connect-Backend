@@ -1,6 +1,6 @@
 import { Card, Chip, Timeline } from '../../components/Ui.jsx';
-import { fmtD } from '../../lib/core.js';
-import { activityFor } from '../../lib/derived.js';
+import { fmtD } from '../../utils/core.js';
+import { activityFor } from '../../utils/derived.js';
 
 const tone = (w) =>
   w === 'System' ? 'k'

@@ -1,6 +1,6 @@
 import { useApp } from '../context/AppContext.jsx';
 import { Card, Chip, Banner, TableWrap } from '../components/Ui.jsx';
-import { fmtD, daysTo, psf, PROJECTS, VAL_STALE_DAYS } from '../lib/core.js';
+import { fmtD, daysTo, psf, PROJECTS, VAL_STALE_DAYS } from '../utils/core.js';
 
 const th = 'text-left text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-900/40 whitespace-nowrap';
 const thR = `${th} text-right`;

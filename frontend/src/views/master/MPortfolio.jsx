@@ -5,8 +5,8 @@ import ValuationModal from '../../components/ValuationModal.jsx';
 import ExitModal from '../../components/ExitModal.jsx';
 import MilestonesModal from '../../components/MilestonesModal.jsx';
 import CompleteRecordModal from '../../components/CompleteRecordModal.jsx';
-import { fmtD, inr, inrF, psf } from '../../lib/core.js';
-import { roll } from '../../lib/derived.js';
+import { fmtD, inr, inrF, psf } from '../../utils/core.js';
+import { roll } from '../../utils/derived.js';
 
 export default function MPortfolio({ c }) {
   const r = roll(c);

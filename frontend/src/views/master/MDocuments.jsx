@@ -3,10 +3,10 @@ import { Upload } from 'lucide-react';
 import { Card, Banner, Dot, TableWrap, btnGhost, rowActionCls } from '../../components/Ui.jsx';
 import DocumentPreviewModal from '../../components/DocumentPreviewModal.jsx';
 import { useApp } from '../../context/AppContext.jsx';
-import { apiFetch } from '../../lib/api.js';
-import { fmtD } from '../../lib/core.js';
-import { docsFor } from '../../lib/derived.js';
-import { toast } from '../../lib/toast.js';
+import { apiFetch } from '../../utils/api.js';
+import { fmtD } from '../../utils/core.js';
+import { docsFor } from '../../utils/derived.js';
+import { toast } from '../../utils/toast.js';
 
 export default function MDocuments({ c }) {
   const { patchCustomer } = useApp();

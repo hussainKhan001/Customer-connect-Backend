@@ -8,8 +8,8 @@ import { useApp } from '../context/AppContext.jsx';
 import { BtnPrimary, btnGhost, formLabelCls as lblCls, formInputCls as inputCls, formErrorCls as errCls, formCheckCls as checkCls } from './Ui.jsx';
 import Modal from './Modal.jsx';
 import ThemedSelect from './theme/ThemedSelect.jsx';
-import { OCC, COMM, toDateInput } from '../lib/core.js';
-import { toast } from '../lib/toast.js';
+import { OCC, COMM, toDateInput } from '../utils/core.js';
+import { toast } from '../utils/toast.js';
 
 const RELATIONS = ['Spouse', 'Parent', 'Sibling', 'Child', 'Other'];
 const CONSENT_ROWS = [

@@ -1,6 +1,6 @@
 import { Card, Banner, Timeline, Dot } from '../../components/Ui.jsx';
-import { fmtD, fmtDM, annivIn, daysTo } from '../../lib/core.js';
-import { roll } from '../../lib/derived.js';
+import { fmtD, fmtDM, annivIn, daysTo } from '../../utils/core.js';
+import { roll } from '../../utils/derived.js';
 
 const when = (d) =>
   d < 0 ? Math.abs(Math.round(d / 365)) + ' yr ago'

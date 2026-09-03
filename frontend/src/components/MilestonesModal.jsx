@@ -6,8 +6,8 @@ import { useState } from 'react';
 import { useApp } from '../context/AppContext.jsx';
 import { BtnPrimary, btnGhost, formLabelCls, formInputCls, formErrorCls } from './Ui.jsx';
 import Modal from './Modal.jsx';
-import { toDateInput } from '../lib/core.js';
-import { toast } from '../lib/toast.js';
+import { toDateInput } from '../utils/core.js';
+import { toast } from '../utils/toast.js';
 
 export default function MilestonesModal({ customer, unitIndex, unit, onClose }) {
   const { mutateCustomer } = useApp();

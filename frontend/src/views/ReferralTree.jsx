@@ -1,7 +1,7 @@
 import { GitBranch, TrendingUp, Users, Clock, Star } from 'lucide-react';
 import { useApp } from '../context/AppContext.jsx';
 import { Card, Chip, Kpi, Kpis } from '../components/Ui.jsx';
-import { cr, inr } from '../lib/core.js';
+import { cr, inr } from '../utils/core.js';
 
 export default function ReferralTree() {
   const { base, openCustomer } = useApp();

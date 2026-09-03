@@ -1,4 +1,4 @@
-import { psf } from '../lib/core.js';
+import { psf } from '../utils/core.js';
 import { useTheme } from '../context/ThemeContext.jsx';
 
 /* The three-band rate ladder: what was paid, the government circle rate,

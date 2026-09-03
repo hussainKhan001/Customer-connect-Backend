@@ -4,7 +4,7 @@
    refresh doesn't bounce you back to the login screen.
    ===================================================================== */
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { apiFetch } from '../lib/api.js';
+import { apiFetch } from '../utils/api.js';
 
 const AuthContext = createContext(null);
 

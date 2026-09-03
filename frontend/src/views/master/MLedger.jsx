@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Card, Chip, Row, KV, rowActionCls } from '../../components/Ui.jsx';
 import LoanModal from '../../components/LoanModal.jsx';
-import { fmtD, inrF } from '../../lib/core.js';
-import { roll } from '../../lib/derived.js';
+import { fmtD, inrF } from '../../utils/core.js';
+import { roll } from '../../utils/derived.js';
 
 export default function MLedger({ c }) {
   const [editIdx, setEditIdx] = useState(null);

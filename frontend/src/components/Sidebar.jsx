@@ -1,9 +1,9 @@
 import { Fragment } from 'react';
 import { useApp } from '../context/AppContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
-import { PROJECTS, VAL_STALE_DAYS, daysTo } from '../lib/core.js';
-import { triggerList } from '../lib/derived.js';
-import { exceptions } from '../lib/intake.js';
+import { PROJECTS, VAL_STALE_DAYS, daysTo } from '../utils/core.js';
+import { triggerList } from '../utils/derived.js';
+import { exceptions } from '../utils/intake.js';
 import {
   LayoutDashboard, Users, IdCard, CalendarClock, GitBranch, FileText, Send,
   Inbox, ClipboardList, LogOut, SlidersHorizontal, BookOpen, ShieldCheck, UserCog, FileWarning, X,

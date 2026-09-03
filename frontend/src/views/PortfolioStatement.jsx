@@ -5,9 +5,9 @@ import { useTheme } from '../context/ThemeContext.jsx';
 import { Card, Timeline, btnGhost } from '../components/Ui.jsx';
 import ThemedSelect from '../components/theme/ThemedSelect.jsx';
 import RateLadder from '../components/RateLadder.jsx';
-import { TODAY, fmtD, inr, inrF, psf } from '../lib/core.js';
-import { roll } from '../lib/derived.js';
-import { apiFetch } from '../lib/api.js';
+import { TODAY, fmtD, inr, inrF, psf } from '../utils/core.js';
+import { roll } from '../utils/derived.js';
+import { apiFetch } from '../utils/api.js';
 
 export default function PortfolioStatement() {
   const { base, stmtId, setStmtId, patchCustomer } = useApp();

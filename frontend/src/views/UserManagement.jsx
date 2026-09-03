@@ -7,9 +7,9 @@ import UserModal from '../components/UserModal.jsx';
 import UserPermissionsModal from '../components/UserPermissionsModal.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useApp } from '../context/AppContext.jsx';
-import { ROLES } from '../lib/reference.js';
-import { apiFetch } from '../lib/api.js';
-import { toast } from '../lib/toast.js';
+import { ROLES } from '../utils/reference.js';
+import { apiFetch } from '../utils/api.js';
+import { toast } from '../utils/toast.js';
 
 const ROLE_OPTIONS = ROLES.map((r) => ({ value: r, label: r }));
 

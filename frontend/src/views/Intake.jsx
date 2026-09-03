@@ -2,10 +2,10 @@ import { useRef, useState } from 'react';
 import { useApp } from '../context/AppContext.jsx';
 import { Card, Chip, Banner, TableWrap, BtnPrimary, btnGhost, confColor } from '../components/Ui.jsx';
 import ThemedSelect from '../components/theme/ThemedSelect.jsx';
-import { PROJECTS } from '../lib/core.js';
-import { CHECKS, FILES, FORM_FIELDS, SAMPLE_DRAFT, exceptions, validateDraft, validateShellDraft } from '../lib/intake.js';
-import { downloadSampleTemplate, parseImportFile } from '../lib/excel.js';
-import { toast } from '../lib/toast.js';
+import { PROJECTS } from '../utils/core.js';
+import { CHECKS, FILES, FORM_FIELDS, SAMPLE_DRAFT, exceptions, validateDraft, validateShellDraft } from '../utils/intake.js';
+import { downloadSampleTemplate, parseImportFile } from '../utils/excel.js';
+import { toast } from '../utils/toast.js';
 
 const EMPTY = Object.fromEntries(FORM_FIELDS.map(([k]) => [k, '']));
 

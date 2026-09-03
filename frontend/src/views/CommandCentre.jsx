@@ -2,9 +2,9 @@ import { Users, Wallet, TrendingUp, ShieldAlert } from 'lucide-react';
 import { useApp } from '../context/AppContext.jsx';
 import { Card, Chip, Kpi, Kpis, Banner, ScoreBar, Timeline, Meter, healthMeterCls, TableWrap, btnGhost } from '../components/Ui.jsx';
 import ValueByProject from '../components/ValueByProject.jsx';
-import { cr, inr, annivIn, daysTo, nextFest, PROJECTS, VAL_STALE_DAYS } from '../lib/core.js';
-import { GATE_ORDER, SEGLBL, SEGMETA, roll, triggerList } from '../lib/derived.js';
-import { exceptions } from '../lib/intake.js';
+import { cr, inr, annivIn, daysTo, nextFest, PROJECTS, VAL_STALE_DAYS } from '../utils/core.js';
+import { GATE_ORDER, SEGLBL, SEGMETA, roll, triggerList } from '../utils/derived.js';
+import { exceptions } from '../utils/intake.js';
 
 /* Three of the six gate codes are things your own teams can close out; the other
    three are facts about the owner that no amount of service recovery changes. */

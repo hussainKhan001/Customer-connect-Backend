@@ -1,8 +1,8 @@
 import { useApp } from '../context/AppContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { Card, Chip, Banner, Timeline } from '../components/Ui.jsx';
-import { inr, nextFest, addD, fmtDM, TODAY, initials } from '../lib/core.js';
-import { triggerList } from '../lib/derived.js';
+import { inr, nextFest, addD, fmtDM, TODAY, initials } from '../utils/core.js';
+import { triggerList } from '../utils/derived.js';
 
 const kindTone = (k) => (k === 'money' ? 'g' : k === 'personal' ? 'm' : 'w');
 

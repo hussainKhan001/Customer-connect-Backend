@@ -1,8 +1,8 @@
 import { LogOut, Banknote, Percent, TrendingDown, AlertCircle } from 'lucide-react';
 import { useApp } from '../context/AppContext.jsx';
 import { Card, Kpi, Kpis, Banner, TableWrap } from '../components/Ui.jsx';
-import { cr, fmtD, inr, psf, projByName } from '../lib/core.js';
-import { unitCalc } from '../lib/derived.js';
+import { cr, fmtD, inr, psf, projByName } from '../utils/core.js';
+import { unitCalc } from '../utils/derived.js';
 
 const COMMISSION = 0.02;
 

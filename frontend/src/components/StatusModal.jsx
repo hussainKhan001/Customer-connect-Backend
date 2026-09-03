@@ -6,8 +6,8 @@ import { useApp } from '../context/AppContext.jsx';
 import { BtnPrimary, btnGhost, formLabelCls, formInputCls, formErrorCls } from './Ui.jsx';
 import Modal from './Modal.jsx';
 import ThemedSelect from './theme/ThemedSelect.jsx';
-import { STATUSLBL } from '../lib/derived.js';
-import { toast } from '../lib/toast.js';
+import { STATUSLBL } from '../utils/derived.js';
+import { toast } from '../utils/toast.js';
 
 const STATUS_OPTIONS = Object.entries(STATUSLBL).map(([value, label]) => ({ value, label }));
 

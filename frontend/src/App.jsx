@@ -6,7 +6,7 @@ import { useTheme } from './context/ThemeContext.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import UserMenu from './components/UserMenu.jsx';
 import Login from './views/Login.jsx';
-import { fmtD, TODAY } from './lib/core.js';
+import { fmtD, TODAY } from './utils/core.js';
 
 import CommandCentre from './views/CommandCentre.jsx';
 import OwnerBase from './views/OwnerBase.jsx';

@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { useApp } from '../context/AppContext.jsx';
 import { BtnPrimary, btnGhost, formLabelCls, formInputCls, formErrorCls } from './Ui.jsx';
 import Modal from './Modal.jsx';
-import { toast } from '../lib/toast.js';
+import { toast } from '../utils/toast.js';
 
 export default function ValuationModal({ customer, unitIndex, unit, onClose }) {
   const { mutateCustomer } = useApp();

@@ -7,8 +7,8 @@ import ThemedSelect from '../components/theme/ThemedSelect.jsx';
 import EditProfileModal from '../components/EditProfileModal.jsx';
 import StatusModal from '../components/StatusModal.jsx';
 import CallModal from '../components/CallModal.jsx';
-import { initials, inrF, fmtD } from '../lib/core.js';
-import { roll, confidence, STATUSLBL, segDisplay } from '../lib/derived.js';
+import { initials, inrF, fmtD } from '../utils/core.js';
+import { roll, confidence, STATUSLBL, segDisplay } from '../utils/derived.js';
 
 import MOverview from './master/MOverview.jsx';
 import MPortfolio from './master/MPortfolio.jsx';

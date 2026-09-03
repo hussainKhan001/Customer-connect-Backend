@@ -5,9 +5,9 @@ import { useState } from 'react';
 import { BtnPrimary, btnGhost, formLabelCls, formInputCls, formErrorCls } from './Ui.jsx';
 import Modal from './Modal.jsx';
 import ThemedSelect from './theme/ThemedSelect.jsx';
-import { ROLES } from '../lib/reference.js';
-import { apiFetch } from '../lib/api.js';
-import { toast } from '../lib/toast.js';
+import { ROLES } from '../utils/reference.js';
+import { apiFetch } from '../utils/api.js';
+import { toast } from '../utils/toast.js';
 
 const ROLE_OPTIONS = ROLES.map((r) => ({ value: r, label: r }));
 

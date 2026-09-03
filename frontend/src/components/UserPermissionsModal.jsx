@@ -6,9 +6,9 @@ import { useState } from 'react';
 import { BtnPrimary, btnGhost, Chip } from './Ui.jsx';
 import Modal from './Modal.jsx';
 import ThemedSelect from './theme/ThemedSelect.jsx';
-import { PERMS, PERM_LABEL, ROLES, NON_OVERRIDABLE } from '../lib/reference.js';
-import { apiFetch } from '../lib/api.js';
-import { toast } from '../lib/toast.js';
+import { PERMS, PERM_LABEL, ROLES, NON_OVERRIDABLE } from '../utils/reference.js';
+import { apiFetch } from '../utils/api.js';
+import { toast } from '../utils/toast.js';
 
 const OVERRIDE_OPTIONS = [
   { value: '', label: '(use role default)' },
