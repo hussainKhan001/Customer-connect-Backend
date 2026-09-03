@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Menu, Moon, Sun } from 'lucide-react';
 import { useApp } from './context/AppContext.jsx';
 import { useAuth } from './context/AuthContext.jsx';
@@ -7,67 +8,28 @@ import Sidebar from './components/Sidebar.jsx';
 import UserMenu from './components/UserMenu.jsx';
 import Login from './pages/Login.jsx';
 import { fmtD, TODAY } from './utils/core.js';
+import { PAGES, pageById } from './constants/navigation.js';
 
-import CommandCentre from './pages/CommandCentre.jsx';
-import OwnerBase from './pages/OwnerBase.jsx';
-import CustomerMaster from './pages/CustomerMaster.jsx';
-import TriggerCalendar from './pages/TriggerCalendar.jsx';
-import ReferralTree from './pages/ReferralTree.jsx';
-import PortfolioStatement from './pages/PortfolioStatement.jsx';
-import SendLog from './pages/SendLog.jsx';
-import Intake from './pages/Intake.jsx';
-import ValuationRegister from './pages/ValuationRegister.jsx';
-import ExitRegister from './pages/ExitRegister.jsx';
-import ScoringEngine from './pages/ScoringEngine.jsx';
-import FieldDictionary from './pages/FieldDictionary.jsx';
-import AccessGovernance from './pages/AccessGovernance.jsx';
-import UserManagement from './pages/UserManagement.jsx';
-import IncompleteRecords from './pages/IncompleteRecords.jsx';
-
-const META = {
-  command: ['Command centre', 'Who is ready to re-invest, who must not be touched, and what the base is worth today.'],
-  base: ['Owner base', 'Every owner across all three entities, scored and segmented. Click a row to open the customer master.'],
-  master: ['Customer master', 'The full record. Everything the system knows about one owner, and every rule it applies to them.'],
-  triggers: ['Trigger calendar', 'Dated reasons to make contact over the next 90 days. Blocked owners are stripped out automatically.'],
-  referrals: ['Referral tree', 'Which owners are actually generating your organic pipeline, and what that pipeline is worth.'],
-  statement: ['Portfolio statement', 'The one page you send every owner. Loyalty product, data-capture mechanism and re-investment pitch in a single sheet.'],
-  sendlog: ['Statement send log', 'Every statement ever sent, what it produced, and what it cost you in disputes.'],
-  intake: ['Intake & exceptions', 'The write path. Three files in, validated, with everything that fails held in an exceptions queue.'],
-  incomplete: ['Incomplete records', "Owners imported from a raw allotment list, with no PAN or confirmed financials yet — held out of the owner base until completed."],
-  valuation: ['Valuation register', 'The signed monthly note behind every gain figure. Without this, your appreciation numbers are indefensible.'],
-  exits: ['Exit register', 'Owners who sold without you. The running cost of not having a resale desk.'],
-  engine: ['Scoring engine', 'Move the weights and watch the segments redraw. Nothing here is a black box.'],
-  dict: ['Field dictionary', 'Every field the system reads or writes, with the named person accountable for capturing it.'],
-  access: ['Access & governance', 'Who sees what, what is PII, how long it is kept, and what the customer can ask you to delete.'],
-  users: ['User management', 'Add accounts and assign roles. Access itself is always decided by the role, never by the individual.'],
-};
-
-const VIEWS = {
-  command: CommandCentre,
-  base: OwnerBase,
-  master: CustomerMaster,
-  triggers: TriggerCalendar,
-  referrals: ReferralTree,
-  statement: PortfolioStatement,
-  sendlog: SendLog,
-  intake: Intake,
-  incomplete: IncompleteRecords,
-  valuation: ValuationRegister,
-  exits: ExitRegister,
-  engine: ScoringEngine,
-  dict: FieldDictionary,
-  access: AccessGovernance,
-  users: UserManagement,
-};
+const MasterPage = pageById('master').Component;
+const StatementPage = pageById('statement').Component;
 
 export default function App() {
   const { user, authLoading } = useAuth();
-  const { view, base, loading, loadError, live } = useApp();
+  const { base, loading, loadError, live } = useApp();
   const { theme, toggleTheme } = useTheme();
+  const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const [title, desc] = META[view];
-  const View = VIEWS[view];
+
+  /* header title/desc, and the scroll-to-top on page change that used
+     to live in AppContext's setView() — keyed on the first path
+     segment only (the "page identity"), not the full pathname, so
+     swapping the customer/tab within Customer Master or Portfolio
+     Statement does NOT scroll to top, matching the old behaviour
+     (only a page-to-page switch ever triggered it). */
+  const pageId = location.pathname.split('/').filter(Boolean)[0] || 'command';
+  const page = pageById(pageId) ?? PAGES[0];
+  useEffect(() => { window.scrollTo(0, 0); }, [pageId]);
 
   const toggleSidebar = () => {
     if (typeof window !== 'undefined' && window.innerWidth < 1024) setMobileOpen((o) => !o);
@@ -120,8 +82,8 @@ export default function App() {
               <Menu className="w-4 h-4" />
             </button>
             <div className="min-w-0">
-              <h1 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white leading-tight truncate">{title}</h1>
-              <p className="hidden sm:block text-[10.5px] text-gray-500 dark:text-gray-400 leading-tight mt-0.5 max-w-xl truncate">{desc}</p>
+              <h1 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white leading-tight truncate">{page.title}</h1>
+              <p className="hidden sm:block text-[10.5px] text-gray-500 dark:text-gray-400 leading-tight mt-0.5 max-w-xl truncate">{page.desc}</p>
             </div>
             <div className="flex-1" />
             <div
@@ -146,7 +108,18 @@ export default function App() {
           </div>
         </div>
         <div className="p-4 sm:p-6 pb-16 max-w-[1800px] w-full mx-auto">
-          <View />
+          <Routes>
+            <Route path="/" element={<Navigate to="/command" replace />} />
+            {PAGES.filter((p) => p.id !== 'master' && p.id !== 'statement').map((p) => (
+              <Route key={p.id} path={p.path} element={<p.Component />} />
+            ))}
+            <Route path="master" element={<MasterPage />} />
+            <Route path="master/:id" element={<MasterPage />} />
+            <Route path="master/:id/:tab" element={<MasterPage />} />
+            <Route path="statement" element={<StatementPage />} />
+            <Route path="statement/:id" element={<StatementPage />} />
+            <Route path="*" element={<Navigate to="/command" replace />} />
+          </Routes>
         </div>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import { Fragment } from 'react';
+import { NavLink } from 'react-router-dom';
 import { useApp } from '../context/AppContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { daysTo } from '../utils/core.js';
@@ -6,31 +7,11 @@ import { PROJECTS } from '../constants/projects.js';
 import { VAL_STALE_DAYS } from '../constants/seedData.js';
 import { triggerList } from '../utils/derived.js';
 import { exceptions } from '../utils/intake.js';
-import {
-  LayoutDashboard, Users, IdCard, CalendarClock, GitBranch, FileText, Send,
-  Inbox, ClipboardList, LogOut, SlidersHorizontal, BookOpen, ShieldCheck, UserCog, FileWarning, X,
-} from 'lucide-react';
-
-export const NAV = [
-  ['Read', 'command', 'Command centre', LayoutDashboard],
-  ['Read', 'base', 'Owner base', Users],
-  ['Read', 'master', 'Customer master', IdCard],
-  ['Act', 'triggers', 'Trigger calendar', CalendarClock],
-  ['Act', 'referrals', 'Referral tree', GitBranch],
-  ['Act', 'statement', 'Portfolio statement', FileText],
-  ['Act', 'sendlog', 'Statement send log', Send],
-  ['Data', 'intake', 'Intake & exceptions', Inbox],
-  ['Data', 'incomplete', 'Incomplete records', FileWarning],
-  ['Data', 'valuation', 'Valuation register', ClipboardList],
-  ['Data', 'exits', 'Exit register', LogOut],
-  ['Build', 'engine', 'Scoring engine', SlidersHorizontal],
-  ['Build', 'dict', 'Field dictionary', BookOpen],
-  ['Build', 'access', 'Access & governance', ShieldCheck],
-  ['Build', 'users', 'User management', UserCog],
-];
+import { PAGES } from '../constants/navigation.js';
+import { X } from 'lucide-react';
 
 export default function Sidebar({ mobileOpen = false, onCloseMobile, collapsed = false }) {
-  const { base, incompleteRecords, view, setView } = useApp();
+  const { base, incompleteRecords } = useApp();
   const { getThemeColor } = useTheme();
 
   const ex = exceptions(base).length;
@@ -76,31 +57,32 @@ export default function Sidebar({ mobileOpen = false, onCloseMobile, collapsed =
         </div>
 
         <nav className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar py-2">
-          {NAV.map(([grp, id, lbl, Icon]) => {
-            const head = grp !== lastGroup ? grp : null;
-            lastGroup = grp;
-            const active = view === id;
+          {PAGES.map((p) => {
+            const head = p.group !== lastGroup ? p.group : null;
+            lastGroup = p.group;
+            const Icon = p.Icon;
             return (
-              <Fragment key={id}>
+              <Fragment key={p.id}>
                 {head && (
                   <div className={`px-4 pt-3 pb-1 text-[9px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 pointer-events-none ${collapsed ? 'lg:hidden' : ''}`}>
                     {head}
                   </div>
                 )}
-                <button
-                  title={collapsed ? lbl : undefined}
-                  onClick={() => { setView(id); onCloseMobile?.(); }}
-                  className={`flex items-center gap-2.5 w-[calc(100%-1rem)] text-left rounded-xl mx-2 my-0.5 px-2.5 py-2 text-[13px] transition-all duration-200 ${collapsed ? 'lg:justify-center lg:px-0' : ''} ${
-                    active ? 'font-semibold bg-primary-500/10 shadow-sm' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100/70 dark:hover:bg-gray-700/50 hover:text-primary-600 dark:hover:text-primary-400'
+                <NavLink
+                  to={`/${p.path}`}
+                  title={collapsed ? p.label : undefined}
+                  onClick={() => onCloseMobile?.()}
+                  className={({ isActive }) => `flex items-center gap-2.5 w-[calc(100%-1rem)] text-left rounded-xl mx-2 my-0.5 px-2.5 py-2 text-[13px] transition-all duration-200 ${collapsed ? 'lg:justify-center lg:px-0' : ''} ${
+                    isActive ? 'font-semibold bg-primary-500/10 shadow-sm' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100/70 dark:hover:bg-gray-700/50 hover:text-primary-600 dark:hover:text-primary-400'
                   }`}
-                  style={active ? { color: getThemeColor() } : undefined}
+                  style={({ isActive }) => (isActive ? { color: getThemeColor() } : undefined)}
                 >
                   <Icon className="w-4 h-4 flex-shrink-0" />
-                  <span className={collapsed ? 'lg:hidden' : 'flex-1 min-w-0 truncate'}>{lbl}</span>
-                  <span className={`flex-shrink-0 whitespace-nowrap text-[10px] text-gray-400 dark:text-gray-500 ${alerts[id] ? 'font-bold' : ''} ${collapsed ? 'lg:hidden' : ''}`} style={alerts[id] ? { color: getThemeColor() } : undefined}>
-                    {counts[id] ?? ''}
+                  <span className={collapsed ? 'lg:hidden' : 'flex-1 min-w-0 truncate'}>{p.label}</span>
+                  <span className={`flex-shrink-0 whitespace-nowrap text-[10px] text-gray-400 dark:text-gray-500 ${alerts[p.id] ? 'font-bold' : ''} ${collapsed ? 'lg:hidden' : ''}`} style={alerts[p.id] ? { color: getThemeColor() } : undefined}>
+                    {counts[p.id] ?? ''}
                   </span>
-                </button>
+                </NavLink>
               </Fragment>
             );
           })}
