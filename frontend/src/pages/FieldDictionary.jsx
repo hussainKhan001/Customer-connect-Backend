@@ -2,8 +2,8 @@ import { Fragment } from 'react';
 import { Card, Chip, TableWrap } from '../components/Ui.jsx';
 import { DICT } from '../constants/governance.js';
 
-const th = 'text-left text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 whitespace-nowrap';
-const td = 'px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm';
+const th = 'text-left text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold px-3.5 py-2.5 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 whitespace-nowrap';
+const td = 'px-3.5 py-3 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm';
 const sub2 = 'text-[10.5px] text-gray-400 dark:text-gray-500';
 
 const reqChip = (req) =>

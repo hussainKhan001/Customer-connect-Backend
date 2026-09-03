@@ -59,13 +59,13 @@ export default function MDocuments({ c }) {
               const doc = docFor(x.key);
               return (
                 <tr key={x.key}>
-                  <td className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm whitespace-nowrap">
+                  <td className="px-4 py-3 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm whitespace-nowrap">
                     <Dot tone={x.ok ? 'g' : 'r'} />{x.n}
                   </td>
-                  <td className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm whitespace-nowrap text-right text-[10.5px] text-gray-400 dark:text-gray-500">
+                  <td className="px-4 py-3 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm whitespace-nowrap text-right text-[10.5px] text-gray-400 dark:text-gray-500">
                     {x.d ? fmtD(x.d) : <span className="text-red-600 dark:text-red-400">not on file</span>}
                   </td>
-                  <td className="px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm whitespace-nowrap text-right">
+                  <td className="px-4 py-3 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm whitespace-nowrap text-right">
                     {doc && (
                       <button className={`${btnGhost} text-xs px-2.5 py-1.5 mr-1.5`} onClick={() => setPreview({ doc, title: x.n })}>
                         View
