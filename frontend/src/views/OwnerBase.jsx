@@ -2,8 +2,10 @@ import { useMemo } from 'react';
 import { ArrowUp, ArrowDown } from 'lucide-react';
 import { useApp } from '../context/AppContext.jsx';
 import { Card, Chip, ScoreBar, TableWrap, btnGhost, confColor } from '../components/Ui.jsx';
-import { cr, fmtD, inr, psf, PROJECTS, ENTITIES } from '../utils/core.js';
-import { SEGLBL, STATUSLBL, segDisplay } from '../utils/derived.js';
+import { cr, fmtD, inr, psf } from '../utils/core.js';
+import { PROJECTS, ENTITIES } from '../constants/projects.js';
+import { segDisplay } from '../utils/derived.js';
+import { SEGLBL, STATUSLBL } from '../constants/segments.js';
 import ThemedSelect from '../components/theme/ThemedSelect.jsx';
 
 const COLS = [

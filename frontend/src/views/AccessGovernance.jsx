@@ -1,6 +1,6 @@
 import { Card, Banner, TableWrap } from '../components/Ui.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
-import { ROLES, PERMS, PERM_LABEL } from '../utils/reference.js';
+import { ROLES, PERMS, PERM_LABEL } from '../constants/governance.js';
 
 const RETENTION = [
   ['Legal file — agreement, registry, KYC', 'Statutory period'],

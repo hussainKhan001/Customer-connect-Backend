@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { BtnPrimary, btnGhost, formLabelCls, formInputCls, formErrorCls } from './Ui.jsx';
 import Modal from './Modal.jsx';
 import ThemedSelect from './theme/ThemedSelect.jsx';
-import { ROLES } from '../utils/reference.js';
+import { ROLES } from '../constants/governance.js';
 import { apiFetch } from '../utils/api.js';
 import { toast } from '../utils/toast.js';
 

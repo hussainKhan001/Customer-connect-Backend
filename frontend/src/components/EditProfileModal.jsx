@@ -8,7 +8,8 @@ import { useApp } from '../context/AppContext.jsx';
 import { BtnPrimary, btnGhost, formLabelCls as lblCls, formInputCls as inputCls, formErrorCls as errCls, formCheckCls as checkCls } from './Ui.jsx';
 import Modal from './Modal.jsx';
 import ThemedSelect from './theme/ThemedSelect.jsx';
-import { OCC, COMM, toDateInput } from '../utils/core.js';
+import { toDateInput } from '../utils/core.js';
+import { OCC, COMM } from '../constants/seedData.js';
 import { toast } from '../utils/toast.js';
 
 const RELATIONS = ['Spouse', 'Parent', 'Sibling', 'Child', 'Other'];

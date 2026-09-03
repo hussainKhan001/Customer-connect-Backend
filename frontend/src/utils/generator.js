@@ -3,10 +3,9 @@
    Replace generateBase() with your own API call; the shape it returns
    is the contract the rest of the system reads.
    ===================================================================== */
-import {
-  TODAY, rnd, pick, ib, bt, addD, yrs, projByName,
-  PROJECTS, F, L, OCC, CITY, COMM, SRC, CTXT,
-} from './core.js';
+import { TODAY, rnd, pick, ib, bt, addD, yrs, projByName } from './core.js';
+import { PROJECTS } from '../constants/projects.js';
+import { F, L, OCC, CITY, COMM, SRC, CTXT } from '../constants/seedData.js';
 
 let SEQ = 1000;
 export const nextCustomerId = () => 'NEO-C-' + ++SEQ;

@@ -1,7 +1,8 @@
 import { Card, Banner, Row, KV } from '../../components/Ui.jsx';
 import RateLadder from '../../components/RateLadder.jsx';
 import { inr, fmtD } from '../../utils/core.js';
-import { roll, STATUSLBL } from '../../utils/derived.js';
+import { roll } from '../../utils/derived.js';
+import { STATUSLBL } from '../../constants/segments.js';
 
 const segNote = (seg) =>
   seg === 'A' ? 'this call is made by the CEO or GM personally, not by a telecaller.'

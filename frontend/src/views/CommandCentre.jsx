@@ -2,8 +2,11 @@ import { Users, Wallet, TrendingUp, ShieldAlert } from 'lucide-react';
 import { useApp } from '../context/AppContext.jsx';
 import { Card, Chip, Kpi, Kpis, Banner, ScoreBar, Timeline, Meter, healthMeterCls, TableWrap, btnGhost } from '../components/Ui.jsx';
 import ValueByProject from '../components/ValueByProject.jsx';
-import { cr, inr, annivIn, daysTo, nextFest, PROJECTS, VAL_STALE_DAYS } from '../utils/core.js';
-import { GATE_ORDER, SEGLBL, SEGMETA, roll, triggerList } from '../utils/derived.js';
+import { cr, inr, annivIn, daysTo, nextFest } from '../utils/core.js';
+import { PROJECTS } from '../constants/projects.js';
+import { VAL_STALE_DAYS } from '../constants/seedData.js';
+import { GATE_ORDER, roll, triggerList } from '../utils/derived.js';
+import { SEGLBL, SEGMETA } from '../constants/segments.js';
 import { exceptions } from '../utils/intake.js';
 
 /* Three of the six gate codes are things your own teams can close out; the other

@@ -8,7 +8,8 @@ import EditProfileModal from '../components/EditProfileModal.jsx';
 import StatusModal from '../components/StatusModal.jsx';
 import CallModal from '../components/CallModal.jsx';
 import { initials, inrF, fmtD } from '../utils/core.js';
-import { roll, confidence, STATUSLBL, segDisplay } from '../utils/derived.js';
+import { roll, confidence, segDisplay } from '../utils/derived.js';
+import { STATUSLBL } from '../constants/segments.js';
 
 import MOverview from './master/MOverview.jsx';
 import MPortfolio from './master/MPortfolio.jsx';

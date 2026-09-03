@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
 import { Card, Chip, TableWrap, btnGhost } from './Ui.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
-import { cr, inr, fmtD, daysTo, PROJECTS, VAL_STALE_DAYS } from '../utils/core.js';
+import { cr, inr, fmtD, daysTo } from '../utils/core.js';
+import { PROJECTS } from '../constants/projects.js';
+import { VAL_STALE_DAYS } from '../constants/seedData.js';
 import { unitCalc } from '../utils/derived.js';
 
 /* Two series, so the palette is categorical and validated:

@@ -1,7 +1,7 @@
 import { useApp } from '../context/AppContext.jsx';
 import { Card, BtnPrimary, btnGhost } from '../components/Ui.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
-import { DEFAULT_W, TRUST_HEAVY_W } from '../utils/derived.js';
+import { DEFAULT_W, TRUST_HEAVY_W } from '../constants/segments.js';
 
 const PILLARS = [
   ['capacity', 'Capacity', 'Can they write the cheque'],

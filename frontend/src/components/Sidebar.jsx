@@ -1,7 +1,9 @@
 import { Fragment } from 'react';
 import { useApp } from '../context/AppContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
-import { PROJECTS, VAL_STALE_DAYS, daysTo } from '../utils/core.js';
+import { daysTo } from '../utils/core.js';
+import { PROJECTS } from '../constants/projects.js';
+import { VAL_STALE_DAYS } from '../constants/seedData.js';
 import { triggerList } from '../utils/derived.js';
 import { exceptions } from '../utils/intake.js';
 import {

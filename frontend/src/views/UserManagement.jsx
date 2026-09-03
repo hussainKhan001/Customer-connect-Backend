@@ -7,7 +7,7 @@ import UserModal from '../components/UserModal.jsx';
 import UserPermissionsModal from '../components/UserPermissionsModal.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useApp } from '../context/AppContext.jsx';
-import { ROLES } from '../utils/reference.js';
+import { ROLES } from '../constants/governance.js';
 import { apiFetch } from '../utils/api.js';
 import { toast } from '../utils/toast.js';
 

@@ -7,8 +7,10 @@
    file, which is exactly what this module does).
    ===================================================================== */
 import ExcelJS from 'exceljs';
-import { FULL_FORM_FIELDS, SAMPLE_DRAFT } from './intake.js';
-import { PROJECTS, OCC, COMM } from './core.js';
+import { SAMPLE_DRAFT } from './intake.js';
+import { FULL_FORM_FIELDS } from '../constants/intakeFields.js';
+import { PROJECTS } from '../constants/projects.js';
+import { OCC, COMM } from '../constants/seedData.js';
 
 const SHEET_NAME = 'Owners';
 const TEMPLATE_FILENAME = 'owner-import-template.xlsx';
