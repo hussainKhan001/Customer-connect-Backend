@@ -62,13 +62,6 @@ export function AppProvider({ children }) {
     };
   }, [user, fetchCustomers]);
 
-  const [view, setViewRaw] = useState('command');
-  const [cid, setCid] = useState(null);
-  const [tab, setTab] = useState('overview');
-  const [sort, setSort] = useState({ k: '_total', dir: -1 });
-  const [filters, setFilters] = useState({ seg: '', proj: '', ent: '', q: '', status: '' });
-  const [stmtId, setStmtId] = useState(null);
-
   /* "shell" records (see backend/src/lib/validateIncomplete.js) have no
      PAN and/or no confirmed unit financials. They used to be held out
      of the scored owner base entirely; enrich()/unitCalc()/score() are
@@ -83,35 +76,6 @@ export function AppProvider({ children }) {
   /* the only expensive computation in the app — memoised on its inputs */
   const base = useMemo(() => enrich(raw, weights), [raw, weights]);
   const byId = useCallback((id) => base.find((c) => c.id === id), [base]);
-
-  const setView = useCallback((v) => {
-    setViewRaw(v);
-    if (typeof window !== 'undefined') window.scrollTo(0, 0);
-  }, []);
-
-  /* click any owner anywhere → open their master record */
-  const openCustomer = useCallback((id) => {
-    setCid(id);
-    setTab('overview');
-    setView('master');
-  }, [setView]);
-
-  /* jump from a segment tile to the filtered owner base */
-  const openSegment = useCallback((seg) => {
-    setFilters((f) => ({ ...f, seg }));
-    setView('base');
-  }, [setView]);
-
-  const openStatement = useCallback((id) => {
-    setStmtId(id);
-    setView('statement');
-  }, [setView]);
-
-  const toggleSort = useCallback((k) => {
-    setSort((s) => (s.k === k ? { k, dir: -s.dir } : { k, dir: -1 }));
-  }, []);
-
-  const clearFilters = useCallback(() => setFilters({ seg: '', proj: '', ent: '', q: '', status: '' }), []);
 
   /* posts to the real API; the new record is scored and gated on the
      next render like any other once it lands in `raw`. Throws with a
@@ -223,12 +187,7 @@ export function AppProvider({ children }) {
     base, byId, raw, incompleteRecords,
     loading, loadError, live,
     weights, setWeights,
-    view, setView,
-    cid, setCid, tab, setTab,
-    sort, toggleSort,
-    filters, setFilters, clearFilters,
-    stmtId, setStmtId,
-    openCustomer, openSegment, openStatement, addCustomer, addIncompleteCustomer, patchCustomer, updateProfile, mutateCustomer,
+    addCustomer, addIncompleteCustomer, patchCustomer, updateProfile, mutateCustomer,
     deleteAllCustomers,
   };
 
