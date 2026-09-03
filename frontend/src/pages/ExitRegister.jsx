@@ -1,7 +1,7 @@
 import { LogOut, Banknote, Percent, TrendingDown, AlertCircle } from 'lucide-react';
 import { useApp } from '../context/AppContext.jsx';
 import { useAppNavigation } from '../hooks/useAppNavigation.js';
-import { Card, Kpi, Kpis, Banner, TableWrap } from '../components/Ui.jsx';
+import { Card, Kpi, Kpis, Banner, TableWrap, Avatar } from '../components/Ui.jsx';
 import { cr, fmtD, inr, psf, projByName } from '../utils/core.js';
 import { unitCalc } from '../utils/derived.js';
 
@@ -61,8 +61,13 @@ export default function ExitRegister() {
               {rows.map(({ c, u, comm }) => (
                 <tr key={`${c.id}-${u.unit}`} className="hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors cursor-pointer" onClick={() => openCustomer(c.id)}>
                   <td className={td}>
-                    <div className="font-bold text-gray-900 dark:text-white">{c.name}</div>
-                    <div className={sub2}>{c.id} · {c.city}</div>
+                    <div className="flex items-center gap-2.5">
+                      <Avatar name={c.name} size="sm" />
+                      <div className="min-w-0">
+                        <div className="font-bold text-gray-900 dark:text-white">{c.name}</div>
+                        <div className={sub2}>{c.id} · {c.city}</div>
+                      </div>
+                    </div>
                   </td>
                   <td className={td}>{u.unit}<div className={sub2}>{u.project} · {u.saleable} sq.ft.</div></td>
                   <td className={tdR}>{psf(u.rate)}</td>

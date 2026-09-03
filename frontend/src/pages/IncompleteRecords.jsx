@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Card, Chip, Banner, TableWrap, rowActionCls } from '../components/Ui.jsx';
+import { Card, Chip, Banner, TableWrap, rowActionCls, Avatar } from '../components/Ui.jsx';
 import { useApp } from '../context/AppContext.jsx';
 import { fmtD } from '../utils/core.js';
 import CompleteRecordModal from '../components/CompleteRecordModal.jsx';
@@ -49,10 +49,15 @@ export default function IncompleteRecords() {
                 const u = c.units[0] || {};
                 const miss = missingFrom(c);
                 return (
-                  <tr key={c.id}>
+                  <tr key={c.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
                     <td className={td}>
-                      <b className="text-gray-900 dark:text-white">{c.name}</b>
-                      <div className="text-[10.5px] text-gray-400 dark:text-gray-500">{c.id}</div>
+                      <div className="flex items-center gap-2.5">
+                        <Avatar name={c.name} size="sm" />
+                        <div className="min-w-0">
+                          <b className="text-gray-900 dark:text-white">{c.name}</b>
+                          <div className="text-[10.5px] text-gray-400 dark:text-gray-500">{c.id}</div>
+                        </div>
+                      </div>
                     </td>
                     <td className={`${td} text-gray-500 dark:text-gray-400`}>{c.mobile}</td>
                     <td className={td}>

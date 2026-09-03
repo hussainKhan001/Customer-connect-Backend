@@ -1,7 +1,7 @@
 import { Send, MailOpen, UserCheck, Sparkles, AlertTriangle } from 'lucide-react';
 import { useApp } from '../context/AppContext.jsx';
 import { useAppNavigation } from '../hooks/useAppNavigation.js';
-import { Card, Chip, Kpi, Kpis, Banner, TableWrap } from '../components/Ui.jsx';
+import { Card, Chip, Kpi, Kpis, Banner, TableWrap, Avatar } from '../components/Ui.jsx';
 import { D, fmtD, inr } from '../utils/core.js';
 
 const th = 'text-left text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-900/40 whitespace-nowrap';
@@ -52,8 +52,13 @@ export default function SendLog() {
               {sent.sort((a, b) => D(b.s.d) - D(a.s.d)).slice(0, 25).map(({ c, s }) => (
                 <tr key={c.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors cursor-pointer" onClick={() => openCustomer(c.id)}>
                   <td className={td}>
-                    <div className="font-bold text-gray-900 dark:text-white">{c.name}</div>
-                    <div className="text-[10.5px] text-gray-400 dark:text-gray-500">{c.id} · {c._project}</div>
+                    <div className="flex items-center gap-2.5">
+                      <Avatar name={c.name} size="sm" />
+                      <div className="min-w-0">
+                        <div className="font-bold text-gray-900 dark:text-white">{c.name}</div>
+                        <div className="text-[10.5px] text-gray-400 dark:text-gray-500">{c.id} · {c._project}</div>
+                      </div>
+                    </div>
                   </td>
                   <td className={`${td} tabular-nums`}>{fmtD(s.d)}</td>
                   <td className={td}><code>{s.v}</code></td>
