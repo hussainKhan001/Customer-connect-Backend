@@ -5,24 +5,24 @@ import { useAuth } from './context/AuthContext.jsx';
 import { useTheme } from './context/ThemeContext.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import UserMenu from './components/UserMenu.jsx';
-import Login from './views/Login.jsx';
+import Login from './pages/Login.jsx';
 import { fmtD, TODAY } from './utils/core.js';
 
-import CommandCentre from './views/CommandCentre.jsx';
-import OwnerBase from './views/OwnerBase.jsx';
-import CustomerMaster from './views/CustomerMaster.jsx';
-import TriggerCalendar from './views/TriggerCalendar.jsx';
-import ReferralTree from './views/ReferralTree.jsx';
-import PortfolioStatement from './views/PortfolioStatement.jsx';
-import SendLog from './views/SendLog.jsx';
-import Intake from './views/Intake.jsx';
-import ValuationRegister from './views/ValuationRegister.jsx';
-import ExitRegister from './views/ExitRegister.jsx';
-import ScoringEngine from './views/ScoringEngine.jsx';
-import FieldDictionary from './views/FieldDictionary.jsx';
-import AccessGovernance from './views/AccessGovernance.jsx';
-import UserManagement from './views/UserManagement.jsx';
-import IncompleteRecords from './views/IncompleteRecords.jsx';
+import CommandCentre from './pages/CommandCentre.jsx';
+import OwnerBase from './pages/OwnerBase.jsx';
+import CustomerMaster from './pages/CustomerMaster.jsx';
+import TriggerCalendar from './pages/TriggerCalendar.jsx';
+import ReferralTree from './pages/ReferralTree.jsx';
+import PortfolioStatement from './pages/PortfolioStatement.jsx';
+import SendLog from './pages/SendLog.jsx';
+import Intake from './pages/Intake.jsx';
+import ValuationRegister from './pages/ValuationRegister.jsx';
+import ExitRegister from './pages/ExitRegister.jsx';
+import ScoringEngine from './pages/ScoringEngine.jsx';
+import FieldDictionary from './pages/FieldDictionary.jsx';
+import AccessGovernance from './pages/AccessGovernance.jsx';
+import UserManagement from './pages/UserManagement.jsx';
+import IncompleteRecords from './pages/IncompleteRecords.jsx';
 
 const META = {
   command: ['Command centre', 'Who is ready to re-invest, who must not be touched, and what the base is worth today.'],
