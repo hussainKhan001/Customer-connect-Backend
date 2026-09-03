@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { LogOut } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
+import { initials } from '../utils/core.js';
 
 /* Account menu — click the avatar/name in the navbar to open a small
    profile card (avatar, name, role, email, online status) with a sign
@@ -36,7 +37,9 @@ export default function UserMenu() {
   }, [open]);
 
   if (!user) return null;
-  const initial = user.name.charAt(0).toUpperCase();
+  /* two-letter initials, matching the shared Avatar primitive used
+     everywhere else — this used to show just one letter. */
+  const initial = initials(user.name);
 
   return (
     <>

@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { useApp } from '../context/AppContext.jsx';
 import { useAppNavigation } from '../hooks/useAppNavigation.js';
-import { Card, Chip, Banner, TableWrap, BtnPrimary, btnGhost, confColor } from '../components/Ui.jsx';
+import { Card, Chip, Banner, TableWrap, BtnPrimary, btnGhost, confColor, Avatar } from '../components/Ui.jsx';
 import ThemedSelect from '../components/theme/ThemedSelect.jsx';
 import { PROJECTS } from '../constants/projects.js';
 import { CHECKS, SAMPLE_DRAFT, exceptions, validateDraft, validateShellDraft } from '../utils/intake.js';
@@ -23,8 +23,8 @@ const inputCls = (bad) =>
   `w-full px-3 py-2.5 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${bad ? 'border-red-400' : 'border-gray-300 dark:border-gray-600'}`;
 const errCls = 'text-xs text-red-500 mt-1';
 const tagCls = 'text-[10.5px] font-mono px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300';
-const tdCls = 'px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm';
-const thCls = 'text-left text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 whitespace-nowrap';
+const tdCls = 'px-4 py-3 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm';
+const thCls = 'text-left text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 whitespace-nowrap';
 
 export default function Intake() {
   const { base, addCustomer, addIncompleteCustomer } = useApp();
@@ -344,8 +344,13 @@ export default function Intake() {
                   onClick={() => openCustomer(c.id)}
                 >
                   <td className={tdCls}>
-                    <div className="font-bold text-gray-900 dark:text-white">{c.name}</div>
-                    <div className="text-[10.5px] text-gray-400 dark:text-gray-500">{c.id}</div>
+                    <div className="flex items-center gap-2.5">
+                      <Avatar name={c.name} size="sm" />
+                      <div className="min-w-0">
+                        <div className="font-bold text-gray-900 dark:text-white">{c.name}</div>
+                        <div className="text-[10.5px] text-gray-400 dark:text-gray-500">{c.id}</div>
+                      </div>
+                    </div>
                   </td>
                   <td className={tdCls}>
                     {c._unit}
