@@ -21,15 +21,16 @@ export default function App() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
 
-  /* header title/desc, and the scroll-to-top on page change that used
-     to live in AppContext's setView() — keyed on the first path
-     segment only (the "page identity"), not the full pathname, so
-     swapping the customer/tab within Customer Master or Portfolio
-     Statement does NOT scroll to top, matching the old behaviour
-     (only a page-to-page switch ever triggered it). */
+  /* header title/desc, keyed on the first path segment (the "page
+     identity") */
   const pageId = location.pathname.split('/').filter(Boolean)[0] || 'command';
   const page = pageById(pageId) ?? PAGES[0];
-  useEffect(() => { window.scrollTo(0, 0); }, [pageId]);
+
+  /* scroll to top on every navigation — including switching the
+     selected owner/tab within Customer Master or Portfolio Statement,
+     not just a page-to-page move — so picking a different owner from
+     a scrolled-down page doesn't leave the new one scrolled too. */
+  useEffect(() => { window.scrollTo(0, 0); }, [location.pathname]);
 
   const toggleSidebar = () => {
     if (typeof window !== 'undefined' && window.innerWidth < 1024) setMobileOpen((o) => !o);
