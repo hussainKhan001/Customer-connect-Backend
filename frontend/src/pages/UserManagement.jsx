@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import Swal from 'sweetalert2';
 import { Plus, AlertTriangle } from 'lucide-react';
-import { Card, Chip, Banner, TableWrap, BtnPrimary, rowActionCls } from '../components/Ui.jsx';
+import { Card, Chip, Banner, TableWrap, BtnPrimary, rowActionCls, Avatar } from '../components/Ui.jsx';
 import ThemedSelect from '../components/theme/ThemedSelect.jsx';
 import UserModal from '../components/UserModal.jsx';
 import UserPermissionsModal from '../components/UserPermissionsModal.jsx';
@@ -14,7 +14,7 @@ import { toast } from '../utils/toast.js';
 const ROLE_OPTIONS = ROLES.map((r) => ({ value: r, label: r }));
 
 const th = 'text-left text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50/80 dark:bg-gray-900/40 whitespace-nowrap';
-const td = 'px-4 py-3 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm';
+const td = 'px-4 py-3.5 border-b border-gray-100 dark:border-gray-700/60 align-top text-sm';
 
 export default function UserManagement() {
   const { user: me } = useAuth();
@@ -159,10 +159,15 @@ export default function UserManagement() {
               {(users || []).map((u) => {
                 const isSelf = u.id === me?.id;
                 return (
-                  <tr key={u.id}>
+                  <tr key={u.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors">
                     <td className={td}>
-                      <b className="text-gray-900 dark:text-white">{u.name}</b>
-                      {isSelf && <span className="text-[10.5px] text-gray-400 dark:text-gray-500"> (you)</span>}
+                      <div className="flex items-center gap-2.5">
+                        <Avatar name={u.name} size="sm" />
+                        <div className="min-w-0">
+                          <b className="text-gray-900 dark:text-white">{u.name}</b>
+                          {isSelf && <span className="text-[10.5px] text-gray-400 dark:text-gray-500"> (you)</span>}
+                        </div>
+                      </div>
                     </td>
                     <td className={`${td} text-gray-500 dark:text-gray-400`}>{u.email}</td>
                     <td className={td}>

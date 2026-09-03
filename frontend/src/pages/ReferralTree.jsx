@@ -1,7 +1,7 @@
 import { GitBranch, TrendingUp, Users, Clock, Star } from 'lucide-react';
 import { useApp } from '../context/AppContext.jsx';
 import { useAppNavigation } from '../hooks/useAppNavigation.js';
-import { Card, Chip, Kpi, Kpis } from '../components/Ui.jsx';
+import { Card, Chip, Kpi, Kpis, Avatar } from '../components/Ui.jsx';
 import { cr, inr } from '../utils/core.js';
 
 export default function ReferralTree() {
@@ -28,9 +28,10 @@ export default function ReferralTree() {
     return (
       <li>
         <span
-          className="inline-flex flex-wrap items-center gap-x-2 gap-y-0.5 px-2 py-1 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-lg cursor-pointer hover:border-primary-500 max-w-full"
+          className="inline-flex flex-wrap items-center gap-x-2 gap-y-0.5 pl-1.5 pr-2.5 py-1.5 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 rounded-full cursor-pointer hover:border-primary-500 hover:shadow-sm transition-all max-w-full"
           onClick={() => openCustomer(c.id)}
         >
+          <Avatar name={c.name} size="xs" />
           <b className="text-[13px] text-gray-900 dark:text-white truncate max-w-[160px] sm:max-w-none">{c.name}</b>
           <Chip cls={c._seg}>{c._seg}</Chip>
           <span className="text-[10px] text-gray-400 dark:text-gray-500 truncate">{c._project} · {inr(c._consid)}</span>
