@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { ArrowUp, ArrowDown } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { ArrowUp, ArrowDown, Download } from 'lucide-react';
 import { useApp } from '../context/AppContext.jsx';
 import { useAppNavigation } from '../hooks/useAppNavigation.js';
 import { useOwnerBaseFilters } from '../hooks/useOwnerBaseFilters.js';
@@ -8,6 +8,8 @@ import { cr, fmtD, inr, psf } from '../utils/core.js';
 import { PROJECTS, ENTITIES } from '../constants/projects.js';
 import { segDisplay } from '../utils/derived.js';
 import { SEGLBL, STATUSLBL } from '../constants/segments.js';
+import { exportOwnerBase } from '../utils/excel.js';
+import { toast } from '../utils/toast.js';
 import ThemedSelect from '../components/theme/ThemedSelect.jsx';
 
 const COLS = [
@@ -34,6 +36,7 @@ export default function OwnerBase() {
   const { base } = useApp();
   const { openCustomer } = useAppNavigation();
   const { filters, setFilters, clearFilters, sort, toggleSort } = useOwnerBaseFilters();
+  const [exporting, setExporting] = useState(false);
 
   const rows = useMemo(() => {
     const f = filters;
@@ -55,6 +58,20 @@ export default function OwnerBase() {
   const set = (k) => (e) => setFilters((f) => ({ ...f, [k]: e.target.value }));
   const setSel = (k) => (v) => setFilters((f) => ({ ...f, [k]: v }));
 
+  /* exports the full filtered `rows` — never the ROW_LIMIT-sliced 120
+     the table renders, so a filtered view of 400 owners exports all
+     400, not just what happened to be on screen. */
+  const doExport = async () => {
+    setExporting(true);
+    try {
+      await exportOwnerBase(rows);
+    } catch (err) {
+      toast.error('Export failed', err.message);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <>
       <div className="flex flex-wrap gap-2 items-center mb-3">
@@ -72,6 +89,15 @@ export default function OwnerBase() {
         <ThemedSelect className="w-52" value={filters.proj} onChange={setSel('proj')} options={PROJ_OPTS} placeholder="All projects" />
 
         <button className={`${btnGhost} text-xs px-2.5 py-1.5`} onClick={clearFilters}>Clear</button>
+
+        <button
+          className={`${btnGhost} text-xs px-2.5 py-1.5 inline-flex items-center gap-1.5`}
+          onClick={doExport}
+          disabled={exporting || !rows.length}
+        >
+          <Download className="w-3.5 h-3.5" />
+          {exporting ? 'Exporting…' : `Export ${rows.length}`}
+        </button>
 
         <span className="text-xs text-gray-500 dark:text-gray-400 ml-auto tabular-nums">
           {rows.length} of {base.length} · ₹{cr(rows.reduce((s, c) => s + c._gain, 0)).toFixed(1)} Cr gain in view

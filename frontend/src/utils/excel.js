@@ -122,6 +122,43 @@ export async function downloadSampleTemplate() {
   downloadBlob(buffer, TEMPLATE_FILENAME);
 }
 
+/* exports the given (already filtered/sorted) owner rows to an .xlsx
+   file — same in-memory Workbook + downloadBlob pattern as the sample
+   template above, no new dependency. Callers must pass the full
+   filtered array, not a UI-truncated slice (Owner Base caps its own
+   table render at ROW_LIMIT for display performance; an export must
+   not silently inherit that cap). */
+export async function exportOwnerBase(rows) {
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet('Owner base');
+  sheet.columns = [
+    { header: 'Customer ID', key: 'id', width: 14 },
+    { header: 'Owner', key: 'name', width: 26 },
+    { header: 'Project', key: 'project', width: 18 },
+    { header: 'Unit', key: 'unit', width: 12 },
+    { header: 'Booked', key: 'booked', width: 14 },
+    { header: 'Held (yrs)', key: 'held', width: 10 },
+    { header: 'Rate paid', key: 'rate', width: 12 },
+    { header: 'Value today', key: 'value', width: 14 },
+    { header: 'Unrealised gain', key: 'gain', width: 16 },
+    { header: 'Paid %', key: 'paidPct', width: 10 },
+    { header: 'Confidence %', key: 'conf', width: 12 },
+    { header: 'Score', key: 'score', width: 8 },
+    { header: 'Segment', key: 'segment', width: 10 },
+  ];
+  sheet.getRow(1).font = { bold: true };
+  rows.forEach((c) => sheet.addRow({
+    id: c.id, name: c.name, project: c._project, unit: c._unit,
+    booked: c._book ? new Date(c._book) : '',
+    held: Number(c._held.toFixed(1)), rate: c._rate, value: c._vrate, gain: c._gain,
+    paidPct: Number(c._paidPct.toFixed(0)), conf: c._conf, score: c._total, segment: c._seg,
+  }));
+  sheet.getColumn('booked').numFmt = 'dd-mmm-yyyy';
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  downloadBlob(buffer, `owner-base-${new Date().toISOString().slice(0, 10)}.xlsx`);
+}
+
 /* the fields buildCustomer/validateDraft cannot proceed without — if
    the header row doesn't map to one of these at all (not "mapped but
    blank" — genuinely not found in any column), every single row will
