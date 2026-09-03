@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { Menu, Moon, Sun } from 'lucide-react';
 import { useApp } from './context/AppContext.jsx';
 import { useAuth } from './context/AuthContext.jsx';
 import { useTheme } from './context/ThemeContext.jsx';
+import { Skeleton } from './components/Ui.jsx';
+import ErrorBoundary from './components/ErrorBoundary.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import UserMenu from './components/UserMenu.jsx';
 import Login from './pages/Login.jsx';
@@ -12,6 +14,40 @@ import { PAGES, pageById } from './constants/navigation.js';
 
 const MasterPage = pageById('master').Component;
 const StatementPage = pageById('statement').Component;
+
+/* Full-shell placeholder for the two top-level loading states (session
+   restore, first data fetch) — shaped like the real sidebar+header+
+   content layout instead of centered text, so the first thing anyone
+   sees isn't a blank "Loading…". */
+function ShellSkeleton() {
+  return (
+    <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-900">
+      <div className="hidden lg:flex w-56 h-[calc(100vh-8px)] my-1 ml-1 flex-col gap-2 p-3 rounded-2xl bg-white/60 dark:bg-gray-800/60">
+        <Skeleton className="h-8 w-full rounded-xl" />
+        {Array.from({ length: 9 }).map((_, i) => <Skeleton key={i} className="h-7 w-full rounded-lg" />)}
+      </div>
+      <div className="flex-1 p-4 sm:p-6 space-y-4">
+        <Skeleton className="h-6 w-56" />
+        <PageSkeleton />
+      </div>
+    </div>
+  );
+}
+
+/* Lighter placeholder for React.lazy()'s <Suspense> boundary — just the
+   content area, since the sidebar/header are already on screen by the
+   time a route's chunk is still loading. */
+function PageSkeleton() {
+  return (
+    <div className="space-y-3.5">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-2xl" />)}
+      </div>
+      <Skeleton className="h-64 rounded-2xl" />
+      <Skeleton className="h-40 rounded-2xl" />
+    </div>
+  );
+}
 
 export default function App() {
   const { user, authLoading } = useAuth();
@@ -37,23 +73,11 @@ export default function App() {
     else setCollapsed((c) => !c);
   };
 
-  if (authLoading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900 text-sm text-gray-500 dark:text-gray-400">
-        Loading…
-      </div>
-    );
-  }
+  if (authLoading) return <ShellSkeleton />;
 
   if (!user) return <Login />;
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-gray-900 text-sm text-gray-500 dark:text-gray-400">
-        Loading owner base…
-      </div>
-    );
-  }
+  if (loading) return <ShellSkeleton />;
 
   if (loadError) {
     return (
@@ -109,18 +133,22 @@ export default function App() {
           </div>
         </div>
         <div className="p-4 sm:p-6 pb-16 max-w-[1800px] w-full mx-auto">
-          <Routes>
-            <Route path="/" element={<Navigate to="/command" replace />} />
-            {PAGES.filter((p) => p.id !== 'master' && p.id !== 'statement').map((p) => (
-              <Route key={p.id} path={p.path} element={<p.Component />} />
-            ))}
-            <Route path="master" element={<MasterPage />} />
-            <Route path="master/:id" element={<MasterPage />} />
-            <Route path="master/:id/:tab" element={<MasterPage />} />
-            <Route path="statement" element={<StatementPage />} />
-            <Route path="statement/:id" element={<StatementPage />} />
-            <Route path="*" element={<Navigate to="/command" replace />} />
-          </Routes>
+          <ErrorBoundary>
+            <Suspense fallback={<PageSkeleton />}>
+              <Routes>
+                <Route path="/" element={<Navigate to="/command" replace />} />
+                {PAGES.filter((p) => p.id !== 'master' && p.id !== 'statement').map((p) => (
+                  <Route key={p.id} path={p.path} element={<p.Component />} />
+                ))}
+                <Route path="master" element={<MasterPage />} />
+                <Route path="master/:id" element={<MasterPage />} />
+                <Route path="master/:id/:tab" element={<MasterPage />} />
+                <Route path="statement" element={<StatementPage />} />
+                <Route path="statement/:id" element={<StatementPage />} />
+                <Route path="*" element={<Navigate to="/command" replace />} />
+              </Routes>
+            </Suspense>
+          </ErrorBoundary>
         </div>
       </div>
     </div>

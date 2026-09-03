@@ -5,26 +5,32 @@
    Sidebar.jsx (to render nav links) — previously duplicated as
    App.jsx's META/VIEWS and Sidebar.jsx's own NAV array.
    ===================================================================== */
+import { lazy } from 'react';
 import {
   LayoutDashboard, Users, IdCard, CalendarClock, GitBranch, FileText, Send,
   Inbox, ClipboardList, LogOut, SlidersHorizontal, BookOpen, ShieldCheck, UserCog, FileWarning,
 } from 'lucide-react';
 
-import CommandCentre from '../pages/CommandCentre.jsx';
-import OwnerBase from '../pages/OwnerBase.jsx';
-import CustomerMaster from '../pages/CustomerMaster.jsx';
-import TriggerCalendar from '../pages/TriggerCalendar.jsx';
-import ReferralTree from '../pages/ReferralTree.jsx';
-import PortfolioStatement from '../pages/PortfolioStatement.jsx';
-import SendLog from '../pages/SendLog.jsx';
-import Intake from '../pages/Intake.jsx';
-import IncompleteRecords from '../pages/IncompleteRecords.jsx';
-import ValuationRegister from '../pages/ValuationRegister.jsx';
-import ExitRegister from '../pages/ExitRegister.jsx';
-import ScoringEngine from '../pages/ScoringEngine.jsx';
-import FieldDictionary from '../pages/FieldDictionary.jsx';
-import AccessGovernance from '../pages/AccessGovernance.jsx';
-import UserManagement from '../pages/UserManagement.jsx';
+/* Route-level code splitting — each page ships as its own chunk,
+   fetched on first visit rather than all 15 up front. App.jsx wraps
+   the <Routes> tree in a single <Suspense>, so this is the only
+   change needed here; PAGES' `Component` field is unaffected — still
+   just a component reference, now a lazy one. */
+const CommandCentre = lazy(() => import('../pages/CommandCentre.jsx'));
+const OwnerBase = lazy(() => import('../pages/OwnerBase.jsx'));
+const CustomerMaster = lazy(() => import('../pages/CustomerMaster.jsx'));
+const TriggerCalendar = lazy(() => import('../pages/TriggerCalendar.jsx'));
+const ReferralTree = lazy(() => import('../pages/ReferralTree.jsx'));
+const PortfolioStatement = lazy(() => import('../pages/PortfolioStatement.jsx'));
+const SendLog = lazy(() => import('../pages/SendLog.jsx'));
+const Intake = lazy(() => import('../pages/Intake.jsx'));
+const IncompleteRecords = lazy(() => import('../pages/IncompleteRecords.jsx'));
+const ValuationRegister = lazy(() => import('../pages/ValuationRegister.jsx'));
+const ExitRegister = lazy(() => import('../pages/ExitRegister.jsx'));
+const ScoringEngine = lazy(() => import('../pages/ScoringEngine.jsx'));
+const FieldDictionary = lazy(() => import('../pages/FieldDictionary.jsx'));
+const AccessGovernance = lazy(() => import('../pages/AccessGovernance.jsx'));
+const UserManagement = lazy(() => import('../pages/UserManagement.jsx'));
 
 /* `path` is always the first URL segment for that page — master/statement
    additionally accept /:id and /:id/:tab, wired directly in App.jsx's

@@ -8,5 +8,19 @@ export default defineConfig({
     open: true,
     proxy: { '/api': 'http://localhost:5000' },
   },
-  build: { outDir: 'dist' },
+  build: {
+    outDir: 'dist',
+    rollupOptions: {
+      output: {
+        /* exceljs is large and only ever touched by Intake's import/
+           template flow (utils/excel.js) — split it into its own chunk
+           so it's fetched separately from (and cacheable independently
+           of) Intake's own page code, rather than baked directly into
+           it. */
+        manualChunks: {
+          exceljs: ['exceljs'],
+        },
+      },
+    },
+  },
 });
