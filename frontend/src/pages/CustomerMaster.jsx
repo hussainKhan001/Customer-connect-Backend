@@ -1,6 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Pencil } from 'lucide-react';
 import { useApp } from '../context/AppContext.jsx';
+import { useAppNavigation } from '../hooks/useAppNavigation.js';
+import { useCurrentCustomer } from '../hooks/useCurrentCustomer.js';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { Card, Chip, Row, KV, Meter, Dot, confMeterCls, btnGhost, BtnPrimary } from '../components/Ui.jsx';
 import ThemedSelect from '../components/theme/ThemedSelect.jsx';
@@ -32,14 +35,28 @@ const TAB_VIEWS = {
 };
 
 export default function CustomerMaster() {
-  const { base, cid, setCid, tab, setTab, weights, openStatement } = useApp();
+  const { base, weights } = useApp();
+  const { openStatement } = useAppNavigation();
   const { getThemeColor } = useTheme();
+  const { id, tab } = useParams();
+  const navigate = useNavigate();
   const [editOpen, setEditOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
   const [callOpen, setCallOpen] = useState(false);
 
   /* land on the strongest Segment A record when nobody has been picked */
-  const current = base.find((c) => c.id === cid) || base.find((c) => c._seg === 'A') || base[0];
+  const fallback = base.find((c) => c._seg === 'A') || base[0];
+  const { current, isFallback } = useCurrentCustomer(base, fallback);
+
+  /* keep the URL in sync with what's actually being shown — a missing/
+     unknown :id resolves to the fallback record, and a missing :tab
+     defaults to overview; both get corrected into the address bar
+     rather than left silently mismatched. */
+  useEffect(() => {
+    if (!current) return;
+    if (isFallback || !tab) navigate(`/master/${current.id}/${tab || 'overview'}`, { replace: true });
+  }, [current, isFallback, tab, navigate]);
+
   if (!current) return <div className="text-xs text-gray-500 dark:text-gray-400">No owners on book.</div>;
 
   const c = current;
@@ -48,7 +65,7 @@ export default function CustomerMaster() {
   const sd = segDisplay(c);
   const g = c._g;
   const s = c._s;
-  const Tab = TAB_VIEWS[tab];
+  const Tab = TAB_VIEWS[tab] || TAB_VIEWS.overview;
 
   return (
     <>
@@ -84,7 +101,7 @@ export default function CustomerMaster() {
           <ThemedSelect
             className="w-full sm:w-72"
             value={c.id}
-            onChange={(v) => { setCid(v); setTab('overview'); }}
+            onChange={(v) => navigate(`/master/${v}/overview`, { replace: true })}
             options={base.slice(0, 80).map((x) => ({ value: x.id, label: `${x.name} — ${STATUSLBL[x.status]}` }))}
           />
         </div>
@@ -105,7 +122,7 @@ export default function CustomerMaster() {
           {CTABS.map(([k, l]) => (
             <button
               key={k}
-              onClick={() => setTab(k)}
+              onClick={() => navigate(`/master/${c.id}/${k}`, { replace: true })}
               className={`text-[13px] whitespace-nowrap px-3.5 py-2.5 border-b-2 transition-colors ${
                 tab === k ? 'font-semibold border-primary-500 text-gray-900 dark:text-white' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
               }`}

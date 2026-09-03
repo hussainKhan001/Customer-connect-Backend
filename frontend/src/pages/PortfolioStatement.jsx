@@ -1,6 +1,9 @@
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Building2 } from 'lucide-react';
 import Swal from 'sweetalert2';
 import { useApp } from '../context/AppContext.jsx';
+import { useCurrentCustomer } from '../hooks/useCurrentCustomer.js';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { Card, Timeline, btnGhost } from '../components/Ui.jsx';
 import ThemedSelect from '../components/theme/ThemedSelect.jsx';
@@ -10,8 +13,9 @@ import { roll } from '../utils/derived.js';
 import { apiFetch } from '../utils/api.js';
 
 export default function PortfolioStatement() {
-  const { base, stmtId, setStmtId, patchCustomer } = useApp();
+  const { base, patchCustomer } = useApp();
   const { getThemeColor } = useTheme();
+  const navigate = useNavigate();
 
   const printAndLog = async (customerId) => {
     window.print();
@@ -39,6 +43,17 @@ export default function PortfolioStatement() {
 
   /* the picker only ever offers owners the gate has cleared */
   const pool = base.filter((c) => !c._blocked && c._live).sort((a, b) => b._gain - a._gain);
+
+  /* hooks must run unconditionally on every render, so this — and the
+     redirect effect below — sit above the "no pool" early return even
+     though they're meaningless when pool is empty (current then comes
+     back undefined and the effect no-ops). */
+  const { current, isFallback } = useCurrentCustomer(pool, pool[0]);
+  useEffect(() => {
+    if (!current || !isFallback) return;
+    navigate(`/statement/${current.id}`, { replace: true });
+  }, [current, isFallback, navigate]);
+
   if (!pool.length) {
     return (
       <div className="p-4 text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
@@ -47,8 +62,7 @@ export default function PortfolioStatement() {
     );
   }
 
-  const picked = pool.find((c) => c.id === stmtId);
-  const c = picked || pool[0];
+  const c = current;
   const r = roll(c);
   const u = r.units[0];
   const y = u.heldYrs.toFixed(1);
@@ -67,7 +81,7 @@ export default function PortfolioStatement() {
       <div className="flex flex-wrap gap-2 items-center mb-3 print:hidden">
         <ThemedSelect
           value={c.id}
-          onChange={setStmtId}
+          onChange={(v) => navigate(`/statement/${v}`, { replace: true })}
           options={ownerOptions}
           className="w-full sm:w-auto sm:min-w-[340px] sm:max-w-[340px]"
         />
