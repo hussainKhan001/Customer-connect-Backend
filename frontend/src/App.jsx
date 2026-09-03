@@ -8,6 +8,7 @@ import { Skeleton } from './components/Ui.jsx';
 import ErrorBoundary from './components/ErrorBoundary.jsx';
 import Sidebar from './components/Sidebar.jsx';
 import UserMenu from './components/UserMenu.jsx';
+import NotificationBell from './components/NotificationBell.jsx';
 import Login from './pages/Login.jsx';
 import { fmtD, TODAY } from './utils/core.js';
 import { PAGES, pageById } from './constants/navigation.js';
@@ -125,6 +126,7 @@ export default function App() {
             >
               {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
+            <NotificationBell />
             <div className="hidden md:block text-[10px] text-gray-400 dark:text-gray-500 text-right leading-tight">
               As on <b className="text-gray-600 dark:text-gray-300">{fmtD(TODAY)}</b><br />
               Sample data · {base.length} owners
