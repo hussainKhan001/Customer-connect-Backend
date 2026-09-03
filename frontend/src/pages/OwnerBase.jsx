@@ -3,7 +3,7 @@ import { ArrowUp, ArrowDown } from 'lucide-react';
 import { useApp } from '../context/AppContext.jsx';
 import { useAppNavigation } from '../hooks/useAppNavigation.js';
 import { useOwnerBaseFilters } from '../hooks/useOwnerBaseFilters.js';
-import { Card, Chip, ScoreBar, TableWrap, btnGhost, confColor } from '../components/Ui.jsx';
+import { Card, Chip, ScoreBar, TableWrap, btnGhost, confColor, Avatar } from '../components/Ui.jsx';
 import { cr, fmtD, inr, psf } from '../utils/core.js';
 import { PROJECTS, ENTITIES } from '../constants/projects.js';
 import { segDisplay } from '../utils/derived.js';
@@ -105,11 +105,16 @@ export default function OwnerBase() {
                     onClick={() => openCustomer(c.id)}
                   >
                     <td className={tdTop}>
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-gray-900 dark:text-white">{c.name}</span>
-                        {c._live > 1 && <Chip cls="m">{c._live} units</Chip>}
+                      <div className="flex items-center gap-2.5">
+                        <Avatar name={c.name} size="sm" />
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-gray-900 dark:text-white">{c.name}</span>
+                            {c._live > 1 && <Chip cls="m">{c._live} units</Chip>}
+                          </div>
+                          <div className="text-[10.5px] text-gray-400 dark:text-gray-500 mt-0.5">{c.id} · {c.city}</div>
+                        </div>
                       </div>
-                      <div className="text-[10.5px] text-gray-400 dark:text-gray-500 mt-0.5">{c.id} · {c.city}</div>
                     </td>
                     <td className={tdTop}>
                       <div className="font-medium text-gray-800 dark:text-gray-100">{c._project}</div>

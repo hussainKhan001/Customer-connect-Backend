@@ -2,7 +2,7 @@ import { Users, Wallet, TrendingUp, ShieldAlert } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext.jsx';
 import { useAppNavigation } from '../hooks/useAppNavigation.js';
-import { Card, Chip, Kpi, Kpis, Banner, ScoreBar, Timeline, Meter, healthMeterCls, TableWrap, btnGhost } from '../components/Ui.jsx';
+import { Card, Chip, Kpi, Kpis, Banner, ScoreBar, Timeline, Meter, healthMeterCls, TableWrap, btnGhost, Avatar } from '../components/Ui.jsx';
 import ValueByProject from '../components/ValueByProject.jsx';
 import { cr, inr, annivIn, daysTo, nextFest } from '../utils/core.js';
 import { PROJECTS } from '../constants/projects.js';
@@ -140,8 +140,13 @@ export default function CommandCentre() {
               {A.slice(0, 9).map((c) => (
                 <tr key={c.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors cursor-pointer" onClick={() => openCustomer(c.id)}>
                   <td className={TD}>
-                    <div className="font-bold text-gray-900 dark:text-white">{c.name}</div>
-                    <div className="text-[10.5px] text-gray-400 dark:text-gray-500">{c.city} · {c.occupation}</div>
+                    <div className="flex items-center gap-2.5">
+                      <Avatar name={c.name} size="sm" />
+                      <div className="min-w-0">
+                        <div className="font-bold text-gray-900 dark:text-white">{c.name}</div>
+                        <div className="text-[10.5px] text-gray-400 dark:text-gray-500">{c.city} · {c.occupation}</div>
+                      </div>
+                    </div>
                   </td>
                   <td className={TD}>
                     {c._project}
@@ -219,10 +224,11 @@ export default function CommandCentre() {
           <Timeline>
             {soon.length ? soon.map((t, i) => (
               <li key={i}
-                  className="flex gap-2.5 py-2 border-b border-gray-100 dark:border-gray-700/60 last:border-0 text-sm hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors cursor-pointer"
+                  className="flex items-center gap-2.5 py-2 border-b border-gray-100 dark:border-gray-700/60 last:border-0 text-sm hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors cursor-pointer"
                   onClick={() => openCustomer(t.c.id)}>
-                <span className="w-20 flex-shrink-0 text-gray-400 dark:text-gray-500 text-xs">{t.days === 0 ? 'today' : `in ${t.days}d`}</span>
-                <span>
+                <span className="w-16 flex-shrink-0 text-gray-400 dark:text-gray-500 text-xs">{t.days === 0 ? 'today' : `in ${t.days}d`}</span>
+                <Avatar name={t.c.name} size="xs" />
+                <span className="min-w-0">
                   <b>{t.c.name}</b> — {t.label}
                   <div className="text-[10.5px] text-gray-400 dark:text-gray-500">
                     {t.c._seg ? (
