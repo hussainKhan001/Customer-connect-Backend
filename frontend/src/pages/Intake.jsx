@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { useApp } from '../context/AppContext.jsx';
+import { useAppNavigation } from '../hooks/useAppNavigation.js';
 import { Card, Chip, Banner, TableWrap, BtnPrimary, btnGhost, confColor } from '../components/Ui.jsx';
 import ThemedSelect from '../components/theme/ThemedSelect.jsx';
 import { PROJECTS } from '../constants/projects.js';
@@ -26,7 +27,8 @@ const tdCls = 'px-3 py-2.5 border-b border-gray-100 dark:border-gray-700/60 alig
 const thCls = 'text-left text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 whitespace-nowrap';
 
 export default function Intake() {
-  const { base, addCustomer, addIncompleteCustomer, openCustomer } = useApp();
+  const { base, addCustomer, addIncompleteCustomer } = useApp();
+  const { openCustomer } = useAppNavigation();
   const [draft, setDraft] = useState(EMPTY);
   const [errors, setErrors] = useState({});
 

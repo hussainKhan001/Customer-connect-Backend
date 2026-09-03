@@ -1,10 +1,12 @@
 import { GitBranch, TrendingUp, Users, Clock, Star } from 'lucide-react';
 import { useApp } from '../context/AppContext.jsx';
+import { useAppNavigation } from '../hooks/useAppNavigation.js';
 import { Card, Chip, Kpi, Kpis } from '../components/Ui.jsx';
 import { cr, inr } from '../utils/core.js';
 
 export default function ReferralTree() {
-  const { base, openCustomer } = useApp();
+  const { base } = useApp();
+  const { openCustomer } = useAppNavigation();
 
   /* who introduced whom — one level of the graph per owner */
   const kids = {};

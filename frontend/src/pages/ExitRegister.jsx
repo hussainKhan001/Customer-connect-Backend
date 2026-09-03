@@ -1,5 +1,6 @@
 import { LogOut, Banknote, Percent, TrendingDown, AlertCircle } from 'lucide-react';
 import { useApp } from '../context/AppContext.jsx';
+import { useAppNavigation } from '../hooks/useAppNavigation.js';
 import { Card, Kpi, Kpis, Banner, TableWrap } from '../components/Ui.jsx';
 import { cr, fmtD, inr, psf, projByName } from '../utils/core.js';
 import { unitCalc } from '../utils/derived.js';
@@ -13,7 +14,8 @@ const tdR = `${td} text-right tabular-nums`;
 const sub2 = 'text-[10.5px] text-gray-400 dark:text-gray-500';
 
 export default function ExitRegister() {
-  const { base, openCustomer } = useApp();
+  const { base } = useApp();
+  const { openCustomer } = useAppNavigation();
 
   const rows = base.flatMap((c) => c.units.filter((x) => x.exited).map((u) => {
     const uc = unitCalc(u);

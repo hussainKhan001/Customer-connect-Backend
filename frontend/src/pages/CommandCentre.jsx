@@ -1,5 +1,7 @@
 import { Users, Wallet, TrendingUp, ShieldAlert } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext.jsx';
+import { useAppNavigation } from '../hooks/useAppNavigation.js';
 import { Card, Chip, Kpi, Kpis, Banner, ScoreBar, Timeline, Meter, healthMeterCls, TableWrap, btnGhost } from '../components/Ui.jsx';
 import ValueByProject from '../components/ValueByProject.jsx';
 import { cr, inr, annivIn, daysTo, nextFest } from '../utils/core.js';
@@ -43,7 +45,9 @@ const HEALTH_FIELDS = [
 ];
 
 export default function CommandCentre() {
-  const { base, incompleteRecords, openCustomer, openSegment, setView } = useApp();
+  const { base, incompleteRecords } = useApp();
+  const { openCustomer, openSegment } = useAppNavigation();
+  const navigate = useNavigate();
 
   const tot = base.length;
   const live = base.filter((c) => c.status === 'ACTIVE');
@@ -236,7 +240,7 @@ export default function CommandCentre() {
             )}
           </Timeline>
           <div className="mt-2.5">
-            <button className={`${btnGhost} text-xs px-2.5 py-1.5`} onClick={() => setView('triggers')}>Open the trigger calendar →</button>
+            <button className={`${btnGhost} text-xs px-2.5 py-1.5`} onClick={() => navigate('/triggers')}>Open the trigger calendar →</button>
           </div>
         </Card>
 

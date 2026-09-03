@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import { ArrowUp, ArrowDown } from 'lucide-react';
 import { useApp } from '../context/AppContext.jsx';
+import { useAppNavigation } from '../hooks/useAppNavigation.js';
+import { useOwnerBaseFilters } from '../hooks/useOwnerBaseFilters.js';
 import { Card, Chip, ScoreBar, TableWrap, btnGhost, confColor } from '../components/Ui.jsx';
 import { cr, fmtD, inr, psf } from '../utils/core.js';
 import { PROJECTS, ENTITIES } from '../constants/projects.js';
@@ -29,7 +31,9 @@ const tdTop = `${tdBase} align-top`;
 const tdMidR = `${tdBase} align-middle text-right tabular-nums`;
 
 export default function OwnerBase() {
-  const { base, filters, setFilters, clearFilters, sort, toggleSort, openCustomer } = useApp();
+  const { base } = useApp();
+  const { openCustomer } = useAppNavigation();
+  const { filters, setFilters, clearFilters, sort, toggleSort } = useOwnerBaseFilters();
 
   const rows = useMemo(() => {
     const f = filters;

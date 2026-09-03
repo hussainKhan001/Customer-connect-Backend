@@ -1,5 +1,6 @@
 import { Send, MailOpen, UserCheck, Sparkles, AlertTriangle } from 'lucide-react';
 import { useApp } from '../context/AppContext.jsx';
+import { useAppNavigation } from '../hooks/useAppNavigation.js';
 import { Card, Chip, Kpi, Kpis, Banner, TableWrap } from '../components/Ui.jsx';
 import { D, fmtD, inr } from '../utils/core.js';
 
@@ -9,7 +10,8 @@ const td = 'px-4 py-3 border-b border-gray-100 dark:border-gray-700/60 align-top
 const tdR = `${td} text-right tabular-nums`;
 
 export default function SendLog() {
-  const { base, openCustomer } = useApp();
+  const { base } = useApp();
+  const { openCustomer } = useAppNavigation();
 
   const sent = base.filter((c) => c.statements.length).map((c) => ({ c, s: c.statements[0] }));
   const n = sent.length;

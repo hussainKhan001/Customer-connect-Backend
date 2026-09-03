@@ -1,4 +1,5 @@
 import { useApp } from '../context/AppContext.jsx';
+import { useAppNavigation } from '../hooks/useAppNavigation.js';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { Card, Chip, Banner, Timeline } from '../components/Ui.jsx';
 import { inr, nextFest, addD, fmtDM, TODAY, initials } from '../utils/core.js';
@@ -55,7 +56,8 @@ function Box({ title, list, openCustomer }) {
 }
 
 export default function TriggerCalendar() {
-  const { base, incompleteRecords, openCustomer } = useApp();
+  const { base, incompleteRecords } = useApp();
+  const { openCustomer } = useAppNavigation();
   const t = triggerList(base, incompleteRecords);
   const nf = nextFest();
   const bk = (lo, hi) => t.filter((x) => x.days >= lo && x.days <= hi);
