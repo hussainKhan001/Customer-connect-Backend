@@ -5,6 +5,7 @@
    ===================================================================== */
 import { Children } from 'react';
 import { useTheme } from '../context/ThemeContext.jsx';
+import { initials } from '../utils/core.js';
 
 /* Chip tone → Tailwind status-badge pair. A–D are the owner segments,
    g/w/r/m/k are the shared semantic tones used everywhere else. */
@@ -24,6 +25,39 @@ export const Chip = ({ cls = 'm', children }) => (
   <span className={`inline-block px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide whitespace-nowrap ${CHIP_TONE[cls] || CHIP_TONE.m}`}>
     {children}
   </span>
+);
+
+/* Initials avatar for list/row contexts (table rows, tree nodes, log
+   lines) — every page that needed one before this (CustomerMaster's
+   page-hero avatar, TriggerCalendar's row avatar, UserMenu's account
+   avatar) hand-rolled its own slightly different version; this is the
+   one everyone else should reuse. CustomerMaster's square, larger
+   page-hero avatar stays bespoke on purpose — it's a different context
+   (page identity, not a row in a list) — so this is deliberately
+   circular, sized for rows. */
+const AVATAR_SIZE = {
+  xs: 'w-6 h-6 text-[9px]',
+  sm: 'w-8 h-8 text-[11px]',
+  md: 'w-10 h-10 text-[13px]',
+  lg: 'w-12 h-12 text-base',
+};
+export const Avatar = ({ name, size = 'sm', className = '' }) => {
+  const { getThemeColor } = useTheme();
+  return (
+    <div
+      className={`${AVATAR_SIZE[size] || AVATAR_SIZE.sm} flex-shrink-0 rounded-full flex items-center justify-center text-white font-bold shadow-sm ${className}`}
+      style={{ backgroundColor: getThemeColor() }}
+    >
+      {initials(name)}
+    </div>
+  );
+};
+
+/* Pulsing placeholder block for loading states — sized entirely via
+   `className` (e.g. "h-4 w-32", "h-10 w-10 rounded-full") so callers
+   compose their own skeleton shells from it. */
+export const Skeleton = ({ className = '' }) => (
+  <div className={`animate-pulse bg-gray-200 dark:bg-gray-700 rounded ${className}`} />
 );
 
 export const ScoreBar = ({ n }) => (
