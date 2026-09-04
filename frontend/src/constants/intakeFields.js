@@ -7,6 +7,18 @@ export const FILES = [
     ['pan', 'mobile', 'alt_mobile', 'email', 'salutation', 'full_name', 'co_applicant_name', 'co_relation', 'corr_address', 'city', 'occupation', 'dob', 'anniversary', 'source_channel', 'referred_by_mobile', 'owner_status']],
 ];
 
+/* Bulk complaint import — one row per complaint, matched to an
+   existing customer by Customer ID (not mobile: two owners can share
+   a mobile, e.g. family, and a complaint logged against the wrong
+   person closes the wrong owner's contact gate). */
+export const COMPLAINT_FIELDS = [
+  ['id', 'Customer ID', 'text'],
+  ['t', 'What happened', 'text'],
+  ['raised', 'Raised on', 'date'],
+  ['owner', 'Owner of the fix', 'text'],
+  ['ncr', 'NCR reference', 'text'],
+];
+
 export const FORM_FIELDS = [
   ['name', 'Full name', 'text'],
   ['pan', 'PAN', 'text'],

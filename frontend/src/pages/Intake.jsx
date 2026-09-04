@@ -6,7 +6,7 @@ import ThemedSelect from '../components/theme/ThemedSelect.jsx';
 import { PROJECTS } from '../constants/projects.js';
 import { CHECKS, SAMPLE_DRAFT, exceptions, validateDraft, validateShellDraft } from '../utils/intake.js';
 import { FILES, FORM_FIELDS } from '../constants/intakeFields.js';
-import { downloadSampleTemplate, parseImportFile } from '../utils/excel.js';
+import { downloadSampleTemplate, parseImportFile, downloadComplaintsTemplate, parseComplaintsFile } from '../utils/excel.js';
 import { toast } from '../utils/toast.js';
 
 const EMPTY = Object.fromEntries(FORM_FIELDS.map(([k]) => [k, '']));
@@ -27,7 +27,7 @@ const tdCls = 'px-4 py-3 border-b border-gray-100 dark:border-gray-700/60 align-
 const thCls = 'text-left text-[9px] uppercase tracking-wider text-gray-400 dark:text-gray-500 font-bold px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 whitespace-nowrap';
 
 export default function Intake() {
-  const { base, addCustomer, addIncompleteCustomer } = useApp();
+  const { base, addCustomer, addIncompleteCustomer, mutateCustomer } = useApp();
   const { openCustomer } = useAppNavigation();
   const [draft, setDraft] = useState(EMPTY);
   const [errors, setErrors] = useState({});
@@ -127,6 +127,51 @@ export default function Intake() {
       if (stillHeld.length) toast.error(`${stillHeld.length} row(s) still held`, 'These failed for a different reason — see the table below.');
     } finally {
       setSavingIncomplete(false);
+    }
+  };
+
+  /* ---- bulk complaint import — logs a complaint against an EXISTING
+     owner per row, matched by Customer ID (see COMPLAINT_FIELDS'
+     comment on why not mobile). Reuses the single-complaint endpoint
+     per row (mutateCustomer), same as owner import reuses
+     addCustomer/addIncompleteCustomer per row, rather than a separate
+     bulk backend route. */
+  const complaintsFileRef = useRef(null);
+  const [complaintsImporting, setComplaintsImporting] = useState(false);
+  const [complaintsResult, setComplaintsResult] = useState(null);
+
+  const handleImportComplaints = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setComplaintsImporting(true);
+    setComplaintsResult(null);
+    try {
+      const rows = await parseComplaintsFile(file);
+      if (!rows.length) {
+        toast.error('Nothing to import', 'The sheet had no data rows below the header.');
+        return;
+      }
+      let ok = 0;
+      const held = [];
+      for (const { rowNumber, draft: row } of rows) {
+        const id = (row.id || '').trim();
+        if (!id) { held.push({ rowNumber, row, reason: 'Missing Customer ID.' }); continue; }
+        if (!base.some((c) => c.id === id)) { held.push({ rowNumber, row, reason: `No customer with ID "${id}".` }); continue; }
+        try {
+          await mutateCustomer(`/api/customers/${id}/complaints`, { t: row.t, raised: row.raised, owner: row.owner, ncr: row.ncr }, 'POST');
+          ok++;
+        } catch (err) {
+          held.push({ rowNumber, row, reason: Object.values(err.errors || {})[0] || err.message || 'Could not save.' });
+        }
+      }
+      setComplaintsResult({ total: rows.length, ok, held });
+      if (ok) toast.success('Complaints logged', `${ok} of ${rows.length} row(s) added — the contact gate is now closed for those owners.`);
+      if (held.length) toast.error(`${held.length} row(s) held`, 'Fix these in the sheet and re-upload.');
+    } catch (err) {
+      toast.error('Could not read the file', err.message || 'Confirm it is the downloaded template, unmodified in structure.');
+    } finally {
+      setComplaintsImporting(false);
     }
   };
 
@@ -230,6 +275,49 @@ export default function Intake() {
                       <tr key={i}>
                         <td className={tdCls}>Row {h.rowNumber}: {h.row.name || '(no name)'} · {h.row.unit || '—'}</td>
                         <td className={tdCls}>{Object.values(h.errs).join(' ')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </TableWrap>
+            )}
+          </div>
+        )}
+      </Card>
+
+      <Card title="Bulk complaints import" hint="Excel, logged against existing owners" className="mb-3.5">
+        <div className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed mb-3">
+          For logging service complaints in bulk — one row per complaint, matched to an <b>existing owner
+          by Customer ID</b> (never mobile, since two owners can share one). Each row logs exactly like the
+          single "Log complaint" action on Customer Master, and immediately closes that owner's contact gate.
+        </div>
+        <div className="flex flex-wrap items-center gap-3 mb-3">
+          <button className={btnGhost} onClick={() => downloadComplaintsTemplate()}>
+            Download template
+          </button>
+          <button
+            className={btnGhost}
+            disabled={complaintsImporting}
+            onClick={() => complaintsFileRef.current?.click()}
+          >
+            {complaintsImporting ? 'Importing…' : 'Upload filled sheet'}
+          </button>
+          <input ref={complaintsFileRef} type="file" accept=".xlsx" className="hidden" onChange={handleImportComplaints} />
+        </div>
+        {complaintsResult && (
+          <div className="text-xs">
+            <div className="mb-1.5">
+              <Chip cls="g">{complaintsResult.ok} logged</Chip>{' '}
+              {complaintsResult.held.length > 0 && <Chip cls="r">{complaintsResult.held.length} held</Chip>}
+            </div>
+            {complaintsResult.held.length > 0 && (
+              <TableWrap>
+                <table className="w-full border-collapse">
+                  <tbody>
+                    {complaintsResult.held.slice(0, 20).map((h, i) => (
+                      <tr key={i}>
+                        <td className={tdCls}>Row {h.rowNumber}: {h.row.id || '(no ID)'}</td>
+                        <td className={tdCls}>{h.reason}</td>
                       </tr>
                     ))}
                   </tbody>

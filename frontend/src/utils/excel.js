@@ -8,7 +8,7 @@
    ===================================================================== */
 import ExcelJS from 'exceljs';
 import { SAMPLE_DRAFT } from './intake.js';
-import { FULL_FORM_FIELDS } from '../constants/intakeFields.js';
+import { FULL_FORM_FIELDS, COMPLAINT_FIELDS } from '../constants/intakeFields.js';
 import { PROJECTS } from '../constants/projects.js';
 import { OCC, COMM } from '../constants/seedData.js';
 
@@ -167,18 +167,27 @@ export async function exportOwnerBase(rows) {
    parser never recognised. Caught explicitly below instead of letting
    that confusing pile-up happen. */
 const REQUIRED_KEYS = ['name', 'pan', 'mobile', 'project', 'unit', 'saleable', 'rate', 'consideration', 'bookDate', 'paid'];
+const COMPLAINT_REQUIRED_KEYS = ['id', 't', 'raised', 'owner', 'ncr'];
 
-/* reads an uploaded workbook's first sheet and returns
-   [{ rowNumber, draft }] — draft keyed exactly like FORM_FIELDS/
-   validateDraft/addCustomer expect. Header matching is case- and
-   spacing-insensitive, and accepts either the on-screen label
-   ("Full name") or the raw field key ("name"), so column order and
-   exact wording don't matter. Unrecognised columns are ignored;
-   missing OPTIONAL columns just come through empty, and validateDraft
-   /the server rejects them same as a blank field in the manual form —
-   reject, don't guess. A missing REQUIRED column is a different kind
-   of problem (see REQUIRED_KEYS) and is reported once, up front. */
-export async function parseImportFile(file) {
+function cellValue(cell) {
+  let value = cell.value;
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  if (value && typeof value === 'object' && 'text' in value) value = value.text;
+  else if (value && typeof value === 'object' && 'result' in value) value = value.result;
+  return value == null ? '' : String(value).trim();
+}
+
+/* shared by parseImportFile/parseComplaintsFile below — reads a
+   workbook's first sheet into [{ rowNumber, draft }], matching header
+   cells to `fields`' keys case/spacing-insensitively, by either the
+   on-screen label ("Full name") or the raw field key ("name"), so
+   column order and exact wording don't matter. Unrecognised columns
+   are ignored; missing OPTIONAL columns just come through empty and
+   whichever validator runs next rejects them same as a blank field in
+   the manual form — reject, don't guess. A missing REQUIRED column is
+   a different problem and is reported once, up front, rather than
+   letting every row fail on it with the same confusing message. */
+async function parseSheetFile(file, fields, requiredKeys) {
   const buffer = await file.arrayBuffer();
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(buffer);
@@ -186,7 +195,7 @@ export async function parseImportFile(file) {
   if (!sheet) return [];
 
   const labelToKey = new Map();
-  FULL_FORM_FIELDS.forEach(([key, label]) => {
+  fields.forEach(([key, label]) => {
     labelToKey.set(norm(label), key);
     labelToKey.set(norm(key), key);
   });
@@ -198,12 +207,12 @@ export async function parseImportFile(file) {
   });
 
   const foundKeys = new Set(Object.values(colKeyByIndex));
-  const missingRequired = REQUIRED_KEYS.filter((k) => !foundKeys.has(k));
+  const missingRequired = requiredKeys.filter((k) => !foundKeys.has(k));
   if (missingRequired.length) {
-    const labels = missingRequired.map((k) => FULL_FORM_FIELDS.find(([fk]) => fk === k)?.[1] || k);
+    const labels = missingRequired.map((k) => fields.find(([fk]) => fk === k)?.[1] || k);
     throw new Error(
       `Could not find a column for: ${labels.join(', ')}. The header row's wording doesn't match the ` +
-      `template's — download a fresh copy ("Download sample template") and use its exact column headers.`
+      `template's — download a fresh copy and use its exact column headers.`
     );
   }
 
@@ -215,14 +224,36 @@ export async function parseImportFile(file) {
     row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
       const key = colKeyByIndex[colNumber];
       if (!key) return;
-      let value = cell.value;
-      if (value instanceof Date) value = value.toISOString().slice(0, 10);
-      else if (value && typeof value === 'object' && 'text' in value) value = value.text;
-      else if (value && typeof value === 'object' && 'result' in value) value = value.result;
-      if (value != null && value !== '') hasAnyValue = true;
-      draft[key] = value == null ? '' : String(value).trim();
+      const value = cellValue(cell);
+      if (value !== '') hasAnyValue = true;
+      draft[key] = value;
     });
     if (hasAnyValue) rows.push({ rowNumber, draft });
   });
   return rows;
+}
+
+export async function parseImportFile(file) {
+  return parseSheetFile(file, FULL_FORM_FIELDS, REQUIRED_KEYS);
+}
+
+/* downloads a template for bulk-logging complaints against EXISTING
+   owners — matched by Customer ID, never mobile (two owners can share
+   a mobile, e.g. family, and a complaint logged against the wrong
+   person closes the wrong owner's contact gate). */
+export async function downloadComplaintsTemplate() {
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet('Complaints');
+  sheet.columns = COMPLAINT_FIELDS.map(([key, label]) => ({ header: label, key, width: 26 }));
+  sheet.getRow(1).font = { bold: true };
+  sheet.addRow({ id: 'NEO-C-12', t: 'Seepage — master bathroom wall', raised: '2026-08-01', owner: 'AGM CRM', ncr: 'NCR-2026-0142' });
+  const buffer = await workbook.xlsx.writeBuffer();
+  downloadBlob(buffer, 'complaints-import-template.xlsx');
+}
+
+/* reads an uploaded workbook of complaint rows — one row per
+   complaint, matched to an existing customer by Customer ID by the
+   caller (this just parses; it doesn't look customers up). */
+export async function parseComplaintsFile(file) {
+  return parseSheetFile(file, COMPLAINT_FIELDS, COMPLAINT_REQUIRED_KEYS);
 }
