@@ -4,7 +4,20 @@
    API; nothing in the view layer needs to change.
    ===================================================================== */
 
-export const TODAY = new Date(2026, 7, 10);
+/* Live local midnight, not a fixed prototype date — this used to be
+   hardcoded to a fictional "as of" date (new Date(2026, 7, 10)) so a
+   demo's day-counts stayed stable no matter when it was opened. Now
+   that the app runs on real, live customer data, a frozen clock
+   silently drifts from reality (e.g. a birthday landing on the real
+   TODAY read as "in 25 days" because the app's own idea of today was
+   weeks behind) — so TODAY tracks the real calendar again. Recomputed
+   once per process/page-load (module-level constant, not a function),
+   so a long-running server or an open browser tab will still drift
+   until its next restart/reload — acceptable since both happen
+   regularly, and converting every TODAY reference into a live
+   function call is a much larger change than this fix calls for. */
+const _now = new Date();
+export const TODAY = new Date(_now.getFullYear(), _now.getMonth(), _now.getDate());
 /* TODAY as its own UTC-midnight instant — a date-only form value like
    "2026-08-10" parses as UTC midnight (ECMAScript spec), while TODAY
    itself is local midnight. In any timezone ahead of UTC (e.g. IST)

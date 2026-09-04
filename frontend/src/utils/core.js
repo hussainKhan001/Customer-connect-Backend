@@ -6,7 +6,14 @@
 import { PROJECTS } from '../constants/projects.js';
 import { FEST } from '../constants/seedData.js';
 
-export const TODAY = new Date(2026, 7, 10);
+/* Live local midnight, not a fixed prototype date — see the matching
+   comment in backend/src/lib/core.js for why this changed from a
+   hardcoded new Date(2026, 7, 10). Recomputed once per page load
+   (module-level constant, not a function), so an open tab left
+   running across midnight still needs a reload to pick up the new
+   day — acceptable given how this app is actually used. */
+const _now = new Date();
+export const TODAY = new Date(_now.getFullYear(), _now.getMonth(), _now.getDate());
 
 /* ---- deterministic PRNG so the sample base is identical every load ---- */
 let seed = 20260810;
