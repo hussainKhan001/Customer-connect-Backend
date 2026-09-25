@@ -32,6 +32,11 @@ export const PERMS = [
      it's the same kind of "marketing/relationship" action, just scoped
      to the shared event list rather than one customer's record. */
   ['Manage events and invite lists', ['F', 'F', 'F', 'S', 'O', 'F', 'N', 'N', 'N']],
+  /* the Leads module (raw website/referral inquiries + the unmatched-
+     complaints review queue, see models/Lead.js and
+     models/ExternalComplaint.js) — same F/S/O/N shape as the row
+     above, since it's the same kind of pre-sale/relationship data. */
+  ['Manage leads and external complaints', ['F', 'F', 'F', 'S', 'O', 'F', 'N', 'N', 'N']],
   ['User management — add/edit/deactivate accounts', ['F', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N']],
   /* deliberately 'N' for every one of the nine seed roles, including
      Board/CEO — this is the one capability that's meant to belong to
@@ -64,6 +69,7 @@ export const PERMS = [
   ['Module: Trigger calendar', ['F', 'F', 'F', 'F', 'F', 'F', 'N', 'N', 'N']],
   ['Module: Referral tree', ['F', 'F', 'F', 'F', 'F', 'F', 'N', 'N', 'N']],
   ['Module: Events', ['F', 'F', 'F', 'F', 'F', 'F', 'N', 'N', 'N']],
+  ['Module: Leads', ['F', 'F', 'F', 'F', 'F', 'F', 'N', 'N', 'N']],
   ['Module: Portfolio statement', ['F', 'F', 'F', 'N', 'N', 'F', 'N', 'N', 'N']],
   ['Module: Statement send log', ['F', 'F', 'F', 'N', 'N', 'F', 'N', 'N', 'N']],
   ['Module: Intake & exceptions', ['F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F']],
@@ -109,6 +115,7 @@ export const MODULE_SOURCE = {
   'Module: Trigger calendar': 'Engagement data — NPS, referrals, events, visits',
   'Module: Referral tree': 'Engagement data — NPS, referrals, events, visits',
   'Module: Events': 'Manage events and invite lists',
+  'Module: Leads': 'Manage leads and external complaints',
   'Module: Portfolio statement': 'Send a portfolio statement',
   'Module: Statement send log': 'Send a portfolio statement',
   'Module: Intake & exceptions': 'Owner base — names and units',

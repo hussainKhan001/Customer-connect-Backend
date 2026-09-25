@@ -14,10 +14,13 @@ import rolesRouter from './routes/roles.js';
 import settingsRouter from './routes/settings.js';
 import eventsRouter from './routes/events.js';
 import auditLogsRouter from './routes/auditLogs.js';
+import leadsRouter from './routes/leads.js';
+import webhooksRouter from './routes/webhooks.js';
 import Customer from './models/Customer.js';
 import Settings from './models/Settings.js';
 import { requireAuth, requirePermission } from './lib/auth.js';
 import { auditRoute } from './lib/auditLog.js';
+import { requireWebhookKey } from './lib/webhookAuth.js';
 import { seedRoles, ensureSuperAdminRole, backfillModuleCapabilities, refreshRoles } from './lib/roleStore.js';
 import { refreshMasterData } from './lib/masterDataStore.js';
 import { MANAGE_USERS } from './lib/permissions.js';
@@ -69,6 +72,17 @@ app.use('/api/events', requireAuth, auditRoute('events'), eventsRouter);
    audited: GETs never are (auditRoute skips them), and this route in
    particular reading its own write log is not a fact worth a row. */
 app.use('/api/audit-logs', requireAuth, requirePermission(MANAGE_USERS), auditLogsRouter);
+/* same shape again — readable by anyone signed in with the Module row
+   (the Leads page), writable only by requirePermission('Manage leads
+   and external complaints') inside the router itself. */
+app.use('/api/leads', requireAuth, auditRoute('leads'), leadsRouter);
+/* NOT requireAuth — these are called by external server-to-server
+   systems (PHP scripts) with no browser session, authenticated by a
+   shared API key instead (see lib/webhookAuth.js). Still audited, same
+   as everything else that writes: auditRoute reads req.user when
+   present and just records actor: null when it isn't, which is
+   exactly the case here. */
+app.use('/api/webhooks', requireWebhookKey, auditRoute('webhooks'), webhooksRouter);
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
@@ -85,7 +99,12 @@ app.use((err, _req, res, _next) => {
      of a generic 500 */
   if (err.code === 'LIMIT_FILE_SIZE') return res.status(400).json({ errors: { file: 'File is too large — max 10MB.' } });
   if (err.message === 'UNSUPPORTED_FILE_TYPE') return res.status(400).json({ errors: { file: 'Only PDF, JPG or PNG files are allowed.' } });
-  res.status(500).json({ error: 'Internal server error' });
+  /* the catch-all for anything unexpected (a bug, a bad DB value) — the
+     real detail goes to the server log above, never to the client:
+     a raw Mongoose/JS error message ("Cast to Number failed for value
+     ...") means nothing to someone using the app and just reads as
+     broken software. What they get instead is plain and actionable. */
+  res.status(500).json({ error: 'Something went wrong on our end. Please try again — if it keeps happening, contact your admin.' });
 });
 
 const PORT = process.env.PORT || 3000;

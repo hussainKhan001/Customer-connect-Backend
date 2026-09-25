@@ -101,6 +101,19 @@ export async function backfillModuleCapabilities() {
     const missing = MODULE_CAPABILITIES.filter((label) => !(label in role.permissions));
     if (!missing.length) continue;
     missing.forEach((label) => {
+      /* a PERMS module row with no MODULE_SOURCE entry AT ALL is a bug
+         (every module row must have one, even if explicitly `null`) —
+         `MODULE_SOURCE[label]` being undefined must NOT be treated the
+         same as an explicit `null` ("never gated, always visible"), or
+         a module row added a moment before its own MODULE_SOURCE
+         mapping (e.g. two separate edits, with a restart racing in
+         between) silently grants everyone full access to a page
+         nobody actually opened up. Fail closed and say so. */
+      if (!(label in MODULE_SOURCE)) {
+        console.error(`backfillModuleCapabilities: no MODULE_SOURCE entry for "${label}" — defaulting to 'N', not guessing 'F'.`);
+        role.permissions[label] = 'N';
+        return;
+      }
       const source = MODULE_SOURCE[label];
       /* a source that's absent from this role's map entirely (not just
          explicitly 'N') must default the module to 'N' too — otherwise

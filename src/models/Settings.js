@@ -97,6 +97,25 @@ const SettingsSchema = new Schema({
       Other: ['Application', 'Sale Deed', 'Sale Agreement'],
     },
   },
+  /* one WhatsApp message per trigger category (see triggerTemplateKey()
+     in the frontend's derived.js for how a Trigger Calendar row's label
+     resolves to one of these keys) — written once here, reused for
+     every owner that trigger fires for, with {name} substituted for
+     the owner's own name at send time. Purely a frontend concern, same
+     as documentTemplates above: the backend only stores and validates
+     the map, nothing here is enforced against an actual send. */
+  messageTemplates: {
+    type: Map,
+    of: String,
+    default: {
+      birthday: 'Dear {name}, wishing you a very Happy Birthday! May the year ahead bring you continued health, happiness and prosperity. — Neoteric Properties',
+      wedding_anniversary: 'Dear {name}, wishing you a very Happy Anniversary! May your togetherness continue to grow stronger every year. — Neoteric Properties',
+      booking_anniversary: 'Dear {name}, congratulations on completing another year with us as a valued owner. Thank you for your continued trust. — Neoteric Properties',
+      registry_anniversary: 'Dear {name}, congratulations on your registry anniversary. Thank you for being a valued owner with us. — Neoteric Properties',
+      loan_closure: 'Dear {name}, congratulations on your loan closure — your EMI capacity is now free. Do let us know if you would like to discuss re-investment options. — Neoteric Properties',
+      ltcg_window: 'Dear {name}, your LTCG / 54F exemption window is now open. Reach out to us if you would like to discuss your options. — Neoteric Properties',
+    },
+  },
 }, {
   toJSON: {
     transform: (_doc, ret) => { delete ret.__v; return ret; },

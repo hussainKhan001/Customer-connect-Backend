@@ -93,6 +93,23 @@ function validateDocumentTemplate(body) {
   return { propertyType, list };
 }
 
+/* the fixed set of Trigger Calendar categories a WhatsApp message can
+   be templated for — see the frontend's derived.js triggerTemplateKey()
+   for how a trigger's own label resolves to one of these. Same
+   one-category-per-save shape as documentTemplate above, and the same
+   reason: no natural "edit every category at once" UI, so a save must
+   never risk clobbering a sibling category's text with a stale copy. */
+const MESSAGE_TEMPLATE_KEYS = ['birthday', 'wedding_anniversary', 'booking_anniversary', 'registry_anniversary', 'loan_closure', 'ltcg_window'];
+
+function validateMessageTemplate(body) {
+  const key = String(body?.key || '').trim();
+  if (!MESSAGE_TEMPLATE_KEYS.includes(key)) return { error: 'Unknown template category — reload and try again.' };
+  const text = String(body?.text || '').trim();
+  if (!text) return { error: 'The message cannot be empty.' };
+  if (!text.includes('{name}')) return { error: "The message must include {name} so the owner's name is filled in." };
+  return { key, text };
+}
+
 /* Readable by any signed-in user — the company letterhead on a
    Portfolio Statement isn't privileged information, and every dropdown
    fed by the master-data lists is used across the whole app the
@@ -150,6 +167,13 @@ router.patch('/', canManage, asyncHandler(async (req, res) => {
     else documentTemplatesPatch = { propertyType, list };
   }
 
+  let messageTemplatePatch = null;
+  if (body.messageTemplate !== undefined) {
+    const { key, text, error } = validateMessageTemplate(body.messageTemplate);
+    if (error) errors.messageTemplate = error;
+    else messageTemplatePatch = { key, text };
+  }
+
   if (Object.keys(errors).length) return res.status(400).json({ errors });
 
   if (documentTemplatesPatch) {
@@ -158,6 +182,14 @@ router.patch('/', canManage, asyncHandler(async (req, res) => {
       ? Object.fromEntries(current.documentTemplates)
       : (current.documentTemplates || {});
     patch.documentTemplates = { ...currentMap, [documentTemplatesPatch.propertyType]: documentTemplatesPatch.list };
+  }
+
+  if (messageTemplatePatch) {
+    const current = await getSettings();
+    const currentMap = current.messageTemplates instanceof Map
+      ? Object.fromEntries(current.messageTemplates)
+      : (current.messageTemplates || {});
+    patch.messageTemplates = { ...currentMap, [messageTemplatePatch.key]: messageTemplatePatch.text };
   }
 
   const settings = await Settings.findOneAndUpdate(

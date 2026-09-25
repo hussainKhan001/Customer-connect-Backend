@@ -448,6 +448,17 @@ router.patch('/:id/units/:index/financials', requirePermission('Owner base — n
   }
 
   Object.assign(unit, patch);
+  /* consideration is normally captured on its own, off the sale
+     agreement — but this form (correcting a unit's area/rate after the
+     fact) is exactly where that number was most likely never entered,
+     or is now stale against a corrected area/rate. Recompute it from
+     whatever saleable/rate/discount the unit holds now (freshly patched
+     or not) whenever either of the first two changes, so it's never
+     left sitting at a stale figure — often 0 — under numbers that were
+     just fixed. */
+  if (patch.saleable !== undefined || patch.rate !== undefined) {
+    unit.consideration = Math.round((unit.saleable || 0) * (unit.rate || 0)) - (unit.discount || 0);
+  }
   customer.markModified('units');
   /* saleable/rate are two of the fields incomplete-ness is judged on
      (see computeIncomplete) — judged against units[0] specifically,
