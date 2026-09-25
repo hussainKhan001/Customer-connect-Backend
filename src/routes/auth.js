@@ -3,6 +3,20 @@ import User from '../models/User.js';
 import { verifyPassword, signToken, setAuthCookie, clearAuthCookie, requireAuth } from '../lib/auth.js';
 import { resolvedPermissions } from '../lib/permissions.js';
 import { asyncHandler } from '../lib/asyncHandler.js';
+import { redisIncrWithExpiry, redisDel, redisGet } from '../lib/redis.js';
+
+/* Login rate-limit — Redis-backed so it survives across the process
+   (a restart doesn't quietly reset an attacker's counter) and works
+   correctly if this API ever runs as more than one instance (an
+   in-memory Map would give each instance its own separate counter).
+   Keyed on the email being attempted, not the IP — the thing worth
+   limiting is guesses against one account, and IP-based limiting is a
+   separate, complementary control this doesn't attempt to replace.
+   Degrades to "no rate-limit" if Redis isn't configured (see lib/
+   redis.js) rather than blocking logins over an optional feature. */
+const MAX_ATTEMPTS = 5;
+const WINDOW_SECONDS = 15 * 60;
+const failKey = (email) => `login-fail:${email}`;
 
 /* Minimal shape for the "who am I really" banner while impersonating —
    never the full user object (no permissions/overrides needed for a
@@ -17,15 +31,30 @@ const router = Router();
 
 router.post('/login', asyncHandler(async (req, res) => {
   const { email, password } = req.body || {};
-  // console.log(email, password);
 
   if (!email || !password) return res.status(400).json({ error: 'Email and password are required' });
 
-  const user = await User.findOne({ email: email.toLowerCase().trim() });
-  if (!user || !user.active) return res.status(401).json({ error: 'Invalid email or password' });
+  const normalizedEmail = email.toLowerCase().trim();
+  const key = failKey(normalizedEmail);
+
+  const attempts = Number(await redisGet(key)) || 0;
+  if (attempts >= MAX_ATTEMPTS) {
+    return res.status(429).json({ error: `Too many failed attempts. Try again in a few minutes.` });
+  }
+
+  const user = await User.findOne({ email: normalizedEmail });
+  if (!user || !user.active) {
+    await redisIncrWithExpiry(key, WINDOW_SECONDS);
+    return res.status(401).json({ error: 'Invalid email or password' });
+  }
 
   const ok = await verifyPassword(password, user.passwordHash);
-  if (!ok) return res.status(401).json({ error: 'Invalid email or password' });
+  if (!ok) {
+    await redisIncrWithExpiry(key, WINDOW_SECONDS);
+    return res.status(401).json({ error: 'Invalid email or password' });
+  }
+
+  await redisDel(key);
 
   const token = signToken(user);
   setAuthCookie(res, token);

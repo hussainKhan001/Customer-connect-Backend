@@ -8,7 +8,7 @@ import cookieParser from 'cookie-parser';
 import { Server as SocketIOServer } from 'socket.io';
 import { connectDB } from './db.js';
 import authRouter from './routes/auth.js';
-import customersRouter from './routes/customers.js';
+import customersRouter, { CUSTOMERS_LIST_CACHE_KEY } from './routes/customers.js';
 import usersRouter from './routes/users.js';
 import rolesRouter from './routes/roles.js';
 import settingsRouter from './routes/settings.js';
@@ -21,6 +21,7 @@ import { auditRoute } from './lib/auditLog.js';
 import { seedRoles, ensureSuperAdminRole, backfillModuleCapabilities, refreshRoles } from './lib/roleStore.js';
 import { refreshMasterData } from './lib/masterDataStore.js';
 import { MANAGE_USERS } from './lib/permissions.js';
+import { redisDel } from './lib/redis.js';
 
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
 
@@ -119,6 +120,9 @@ connectDB()
     const changeStream = Customer.watch();
     changeStream.on('change', (change) => {
       io.emit('customers:changed', { operationType: change.operationType });
+      // fire-and-forget — a missed delete just means the 30s TTL in
+      // routes/customers.js is the fallback instead of this being instant
+      redisDel(CUSTOMERS_LIST_CACHE_KEY).catch(() => {});
     });
     changeStream.on('error', (err) => {
       console.error('Change stream error:', err.message);

@@ -18,6 +18,16 @@ import { TODAY, computeIncomplete, normName, normMobile } from '../lib/core.js';
 import { requirePermission } from '../lib/auth.js';
 import { hasPermission, MANAGE_USERS } from '../lib/permissions.js';
 import { asyncHandler } from '../lib/asyncHandler.js';
+import { redisGet, redisSet } from '../lib/redis.js';
+
+/* the whole owner base (800+ documents, most of what this app reads
+   comes through this one endpoint) cached for a short window — the
+   real invalidation is index.js's Change Stream listener deleting this
+   key on every write, from ANY source (this API, a seed script, a
+   direct Compass edit); the TTL is only a backstop in case a change
+   stream event is ever missed, not the primary invalidation path. */
+export const CUSTOMERS_LIST_CACHE_KEY = 'cache:customers:list';
+const CUSTOMERS_LIST_CACHE_TTL = 30;
 
 const router = Router();
 
@@ -65,8 +75,17 @@ const upload = multer({
 });
 
 router.get('/', asyncHandler(async (_req, res) => {
+  const cached = await redisGet(CUSTOMERS_LIST_CACHE_KEY);
+  if (cached) {
+    res.set('X-Cache', 'HIT');
+    return res.type('application/json').send(cached);
+  }
+
   const customers = await Customer.find().sort({ id: 1 });
-  res.json(customers);
+  const body = JSON.stringify(customers);
+  await redisSet(CUSTOMERS_LIST_CACHE_KEY, body, CUSTOMERS_LIST_CACHE_TTL);
+  res.set('X-Cache', 'MISS');
+  res.type('application/json').send(body);
 }));
 
 router.get('/:id', asyncHandler(async (req, res) => {
