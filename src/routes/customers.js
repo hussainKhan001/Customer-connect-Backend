@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import multer from 'multer';
 import Customer from '../models/Customer.js';
+import AuditLog from '../models/AuditLog.js';
 import Counter, { nextCustomerId } from '../models/Counter.js';
 import { isCloudinaryConfigured, uploadBuffer, deleteAsset } from '../lib/cloudinary.js';
 import { validateDraft, buildCustomer, buildUnit, validateProfilePatch } from '../lib/validate.js';
@@ -92,6 +93,23 @@ router.get('/:id', asyncHandler(async (req, res) => {
   const customer = await Customer.findOne({ id: req.params.id });
   if (!customer) return res.status(404).json({ error: 'Customer not found' });
   res.json(customer);
+}));
+
+/* Who first worked on this owner — the earliest audit trail entry for
+   this customer id (see lib/auditLog.js's auditRoute() middleware,
+   which writes one on every create/update/delete against /api/
+   customers, automatically). Deliberately separate from the full
+   Audit Log page (which is Super-Admin-only, see Module: Audit log) —
+   "who added this owner" is a much lower-sensitivity single fact than
+   the whole change history, so this stays reachable to anyone who can
+   already see the owner themselves. Records seeded/imported before
+   audit logging existed have no entry here and this returns null,
+   not a guess. */
+router.get('/:id/first-touch', asyncHandler(async (req, res) => {
+  const entry = await AuditLog.findOne({ resource: 'customers', 'params.id': req.params.id })
+    .sort({ at: 1 })
+    .select('actor at');
+  res.json(entry ? { actor: entry.actor, at: entry.at } : null);
 }));
 
 router.post('/', asyncHandler(async (req, res) => {
