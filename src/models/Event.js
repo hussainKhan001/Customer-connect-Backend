@@ -11,6 +11,10 @@ const InviteSchema = new Schema({
   customerName: { type: String, default: '' },
   invitedAt: { type: Date, default: Date.now },
   invitedBy: { type: String, default: null },
+  /* a separate fact from being on the invite list, set after the event
+     — lets the Events page's detail view answer "who actually showed
+     up", not just "who was meant to". */
+  attended: { type: Boolean, default: false },
 }, { _id: false });
 
 const EventSchema = new Schema({

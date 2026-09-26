@@ -83,6 +83,23 @@ router.post('/:id/invite', canManage, asyncHandler(async (req, res) => {
   res.json(event);
 }));
 
+/* marks (or unmarks) whether an invited owner actually attended — a
+   separate fact from being on the invite list, captured after the
+   event so the detail view can answer "who actually showed up", not
+   just "who was meant to". */
+router.patch('/:id/invite/:customerId', canManage, asyncHandler(async (req, res) => {
+  const event = await Event.findById(req.params.id);
+  if (!event) return res.status(404).json({ error: 'Event not found' });
+
+  const invite = event.invites.find((i) => i.customerId === req.params.customerId);
+  if (!invite) return res.status(404).json({ error: 'This owner is not on the invite list.' });
+
+  invite.attended = !!req.body?.attended;
+  event.markModified('invites');
+  await event.save();
+  res.json(event);
+}));
+
 router.delete('/:id/invite/:customerId', canManage, asyncHandler(async (req, res) => {
   const event = await Event.findById(req.params.id);
   if (!event) return res.status(404).json({ error: 'Event not found' });

@@ -80,6 +80,16 @@ export const PERMS = [
   ['Module: Field dictionary', ['F', 'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F']],
   ['Module: Access & governance', ['F', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N']],
   ['Module: User management', ['F', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N']],
+  /* Settings.jsx's "Company profile" and "Roles" tabs used to be gated
+     by the same 'Module: User management' row as the "Users" tab (all
+     three were one page's internal tab switcher before Settings.jsx
+     consolidated them) — split into their own rows so a role/user can
+     be given one of the three without automatically getting the other
+     two. Seeded identically to 'Module: User management' (same F/N
+     split) since that reproduces exactly who could already reach each
+     tab the day this split happened; nothing changes on its own. */
+  ['Module: Company profile', ['F', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N']],
+  ['Module: Roles', ['F', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N']],
   ['Module: Master data', ['F', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N']],
   /* gates the Audit log viewer page — same F/N split as User management,
      Access & governance and Master data above: the audit trail is who
@@ -128,6 +138,8 @@ export const MODULE_SOURCE = {
      further down this same file, after this object is evaluated. */
   'Module: Access & governance': 'User management — add/edit/deactivate accounts',
   'Module: User management': 'User management — add/edit/deactivate accounts',
+  'Module: Company profile': 'User management — add/edit/deactivate accounts',
+  'Module: Roles': 'User management — add/edit/deactivate accounts',
   'Module: Master data': 'User management — add/edit/deactivate accounts',
   'Module: Audit log': 'User management — add/edit/deactivate accounts',
 };
