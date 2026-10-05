@@ -37,6 +37,11 @@ export const PERMS = [
      models/ExternalComplaint.js) — same F/S/O/N shape as the row
      above, since it's the same kind of pre-sale/relationship data. */
   ['Manage leads and external complaints', ['F', 'F', 'F', 'S', 'O', 'F', 'N', 'N', 'N']],
+  /* linking/unlinking which owners belong to the same family group
+     (see models/FamilyGroup.js) — same F/S/O/N shape as the two rows
+     above, since it's the same kind of owner-relationship bookkeeping,
+     not a data-sensitivity question the way payment/valuation rows are. */
+  ['Manage family groups', ['F', 'F', 'F', 'S', 'O', 'F', 'N', 'N', 'N']],
   ['User management — add/edit/deactivate accounts', ['F', 'N', 'N', 'N', 'N', 'N', 'N', 'N', 'N']],
   /* deliberately 'N' for every one of the nine seed roles, including
      Board/CEO — this is the one capability that's meant to belong to

@@ -14,13 +14,17 @@ import rolesRouter from './routes/roles.js';
 import settingsRouter from './routes/settings.js';
 import eventsRouter from './routes/events.js';
 import auditLogsRouter from './routes/auditLogs.js';
+import systemErrorsRouter from './routes/systemErrors.js';
 import leadsRouter from './routes/leads.js';
 import webhooksRouter from './routes/webhooks.js';
+import familyGroupsRouter from './routes/familyGroups.js';
 import Customer from './models/Customer.js';
 import Settings from './models/Settings.js';
 import { requireAuth, requirePermission } from './lib/auth.js';
 import { auditRoute } from './lib/auditLog.js';
 import { requireWebhookKey } from './lib/webhookAuth.js';
+import { correlationId } from './lib/correlationId.js';
+import { errorHandler, recordFatalError } from './lib/errorHandler.js';
 import { seedRoles, ensureSuperAdminRole, backfillModuleCapabilities, refreshRoles } from './lib/roleStore.js';
 import { refreshMasterData } from './lib/masterDataStore.js';
 import { MANAGE_USERS } from './lib/permissions.js';
@@ -46,6 +50,10 @@ app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({ origin: FRONTEND_ORIGIN, credentials: true }));
 app.use(cookieParser());
 app.use(express.json());
+/* before every route, including auth — anything that goes wrong from
+   here on (a validation 400, an unexpected 500, an audit log row) can
+   be tied back to this one request. See lib/correlationId.js. */
+app.use(correlationId);
 
 /* auditRoute(resource) is mounted on every router below (auth included)
    so every state-changing request the API ever serves — success or
@@ -72,10 +80,21 @@ app.use('/api/events', requireAuth, auditRoute('events'), eventsRouter);
    audited: GETs never are (auditRoute skips them), and this route in
    particular reading its own write log is not a fact worth a row. */
 app.use('/api/audit-logs', requireAuth, requirePermission(MANAGE_USERS), auditLogsRouter);
+/* same audience again — the "something actually broke" trail
+   (lib/errorHandler.js), distinct from the audit log's "who did what"
+   trail above. GETs aren't audited (see auditRoute's own comment), and
+   its one write (marking an entry resolved) is a housekeeping action
+   on this collection itself, not worth a row in the OTHER log. */
+app.use('/api/system-errors', requireAuth, requirePermission(MANAGE_USERS), systemErrorsRouter);
 /* same shape again — readable by anyone signed in with the Module row
    (the Leads page), writable only by requirePermission('Manage leads
    and external complaints') inside the router itself. */
 app.use('/api/leads', requireAuth, auditRoute('leads'), leadsRouter);
+/* same shape again — readable by anyone signed in (Customer Master
+   needs the group list for the "add to existing group" picker),
+   writable only by requirePermission('Manage family groups') inside
+   the router itself. */
+app.use('/api/family-groups', requireAuth, auditRoute('familyGroups'), familyGroupsRouter);
 /* NOT requireAuth — these are called by external server-to-server
    systems (PHP scripts) with no browser session, authenticated by a
    shared API key instead (see lib/webhookAuth.js). Still audited, same
@@ -91,20 +110,23 @@ app.get('/api/health', (_req, res) => res.json({ ok: true }));
    a free-tier instance from being treated as 404/down and spun back down */
 app.get('/', (_req, res) => res.json({ ok: true }));
 
-// eslint-disable-next-line no-unused-vars
-app.use((err, _req, res, _next) => {
-  console.error(err);
-  /* multer (file upload) rejections are user-facing validation errors,
-     not server faults — surface them as a normal field error instead
-     of a generic 500 */
-  if (err.code === 'LIMIT_FILE_SIZE') return res.status(400).json({ errors: { file: 'File is too large — max 10MB.' } });
-  if (err.message === 'UNSUPPORTED_FILE_TYPE') return res.status(400).json({ errors: { file: 'Only PDF, JPG or PNG files are allowed.' } });
-  /* the catch-all for anything unexpected (a bug, a bad DB value) — the
-     real detail goes to the server log above, never to the client:
-     a raw Mongoose/JS error message ("Cast to Number failed for value
-     ...") means nothing to someone using the app and just reads as
-     broken software. What they get instead is plain and actionable. */
-  res.status(500).json({ error: 'Something went wrong on our end. Please try again — if it keeps happening, contact your admin.' });
+app.use(errorHandler);
+
+/* Express's error middleware only ever sees errors thrown inside a
+   request cycle — a rejected promise nobody awaited, or a throw from a
+   timer/callback outside any request, never reaches it at all and
+   would otherwise just be a silent console.error with no record.
+   Node still considers the process's state suspect after either, so
+   this logs it (recordFatalError persists to SystemError) and exits
+   rather than limping on — matching Node's own documented advice for
+   uncaughtException, and applied the same way to unhandledRejection
+   since a "silently ignore it" default has bitten teams before. */
+process.on('unhandledRejection', (reason) => {
+  recordFatalError('rejection', reason instanceof Error ? reason : new Error(String(reason)))
+    .finally(() => process.exit(1));
+});
+process.on('uncaughtException', (err) => {
+  recordFatalError('exception', err).finally(() => process.exit(1));
 });
 
 const PORT = process.env.PORT || 3000;

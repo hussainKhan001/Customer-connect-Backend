@@ -274,6 +274,13 @@ const CustomerSchema = new Schema({
      the actual fields on write (see validateIncomplete.js), never set
      directly by a client. */
   incomplete: { type: Boolean, default: false },
+  /* links this owner to a FamilyGroup (see models/FamilyGroup.js) when
+     several family members each hold units under their own separate
+     Customer record — an explicit, staff-set link (never inferred from
+     shared surname/address/mobile, which is exactly the kind of guess
+     that quietly merges two unrelated owners). null for the overwhelming
+     majority of owners, who aren't part of a group at all. */
+  familyGroupId: { type: String, default: null, index: true },
 }, {
   toJSON: {
     transform: (_doc, ret) => { delete ret._id; delete ret.__v; return ret; },
