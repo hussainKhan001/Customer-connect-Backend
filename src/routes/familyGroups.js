@@ -36,6 +36,7 @@ router.get('/:id', asyncHandler(async (req, res) => {
 router.post('/', canManage, asyncHandler(async (req, res) => {
   const name = String(req.body?.name || '').trim();
   const customerId = String(req.body?.customerId || '').trim();
+  const relation = String(req.body?.relation || '').trim() || null;
   if (!name) return res.status(400).json({ errors: { name: 'Enter a name for this family group.' } });
   if (!customerId) return res.status(400).json({ errors: { customerId: 'Missing owner to add — reload and try again.' } });
 
@@ -45,6 +46,7 @@ router.post('/', canManage, asyncHandler(async (req, res) => {
 
   const group = await FamilyGroup.create({ name, createdBy: req.user.name });
   customer.familyGroupId = group.id;
+  if (relation) customer.familyGroupRelation = relation;
   await customer.save();
   res.status(201).json(group.toJSON());
 }));
@@ -71,7 +73,7 @@ router.delete('/:id', canManage, asyncHandler(async (req, res) => {
   const group = await FamilyGroup.findById(req.params.id);
   if (!group) return res.status(404).json({ error: 'Family group not found' });
 
-  await Customer.updateMany({ familyGroupId: group.id }, { familyGroupId: null });
+  await Customer.updateMany({ familyGroupId: group.id }, { familyGroupId: null, familyGroupRelation: null });
   await group.deleteOne();
   res.json({ id: req.params.id });
 }));
@@ -84,6 +86,7 @@ router.post('/:id/members', canManage, asyncHandler(async (req, res) => {
   if (!group) return res.status(404).json({ error: 'Family group not found' });
 
   const customerId = String(req.body?.customerId || '').trim();
+  const relation = String(req.body?.relation || '').trim() || null;
   if (!customerId) return res.status(400).json({ errors: { customerId: 'Missing owner to add.' } });
 
   const customer = await Customer.findOne({ id: customerId });
@@ -92,6 +95,7 @@ router.post('/:id/members', canManage, asyncHandler(async (req, res) => {
   if (customer.familyGroupId) return res.status(400).json({ error: 'This owner is already part of a different family group — remove them from it first.' });
 
   customer.familyGroupId = group.id;
+  if (relation) customer.familyGroupRelation = relation;
   await customer.save();
   res.json(group.toJSON());
 }));
@@ -106,6 +110,7 @@ router.delete('/:id/members/:customerId', canManage, asyncHandler(async (req, re
   const customer = await Customer.findOne({ id: req.params.customerId, familyGroupId: req.params.id });
   if (!customer) return res.status(404).json({ error: 'This owner is not in that family group.' });
   customer.familyGroupId = null;
+  customer.familyGroupRelation = null;
   await customer.save();
   res.json(customer);
 }));

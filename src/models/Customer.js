@@ -281,6 +281,13 @@ const CustomerSchema = new Schema({
      that quietly merges two unrelated owners). null for the overwhelming
      majority of owners, who aren't part of a group at all. */
   familyGroupId: { type: String, default: null, index: true },
+  /* this member's relation to whoever they were linked under (e.g. the
+     owner on whose page "Add member" was used) — purely descriptive,
+     shown next to their name on the Family group card so a 3+ member
+     group reads as an actual family instead of an unlabelled list of
+     names. null until set; never required, since plenty of groups are
+     linked before anyone bothers to note the relation. */
+  familyGroupRelation: { type: String, default: null },
 }, {
   toJSON: {
     transform: (_doc, ret) => { delete ret._id; delete ret.__v; return ret; },
