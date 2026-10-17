@@ -356,6 +356,7 @@ router.post('/:id/complaints/:index/close', requirePermission('Complaints and NC
     unit: item.unit,
     project: item.project,
     closeReason: patch.reason,
+    imageUrl: item.imageUrl || null,
   });
   await customer.save();
   res.json(customer);

@@ -74,6 +74,11 @@ const ComplaintSchema = new Schema({
      this existed) don't need backfilling, but every close from here
      on should carry one */
   closeReason: { type: String, default: null },
+  /* carried over from the external complaint system (see
+     ExternalComplaint.js) when one gets synced into this
+     owner-facing workflow — null for anything logged by staff
+     directly, who have no attachment step in that flow. */
+  imageUrl: { type: String, default: null },
 }, { _id: false });
 
 const OpenComplaintSchema = new Schema({
@@ -84,6 +89,7 @@ const OpenComplaintSchema = new Schema({
   ncr: String,
   unit: { type: String, default: null },
   project: { type: String, default: null },
+  imageUrl: { type: String, default: null },
 }, { _id: false });
 
 const ReferralSchema = new Schema({
