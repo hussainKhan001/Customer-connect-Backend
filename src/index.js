@@ -3,6 +3,7 @@ import http from 'http';
 import mongoose from 'mongoose';
 import express from 'express';
 import helmet from 'helmet';
+import compression from 'compression';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { Server as SocketIOServer } from 'socket.io';
@@ -45,6 +46,13 @@ if (!/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(FRONTEND_ORIGIN)) app.s
    CSP (meant for pages that load scripts/styles) is unused overhead
    for a fetch-only backend, so it's the one directive turned off */
 app.use(helmet({ contentSecurityPolicy: false }));
+/* the owner list alone is ~2MB of JSON (800+ customers, each with
+   every unit/complaint/referral/etc. embedded) — gzip shrinks that by
+   ~90% with no application-level cost, which matters far more than it
+   would for a typical API since this app's whole model is "load the
+   full base once, filter client-side" (see AppContext.jsx), not
+   paginated reads of small pages. */
+app.use(compression());
 /* credentials:true + a specific origin (not '*') is required for the
    httpOnly auth cookie to actually be sent/accepted cross-origin */
 app.use(cors({ origin: FRONTEND_ORIGIN, credentials: true }));

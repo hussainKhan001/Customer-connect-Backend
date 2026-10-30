@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import Settings from '../models/Settings.js';
+import Customer from '../models/Customer.js';
 import { requirePermission } from '../lib/auth.js';
 import { MANAGE_USERS } from '../lib/permissions.js';
 import { asyncHandler } from '../lib/asyncHandler.js';
@@ -137,10 +138,19 @@ router.patch('/', canManage, asyncHandler(async (req, res) => {
     patch[f] = list;
   }
 
+  /* captured before the write so the post-save cascade below can tell
+     WHICH projects actually had their valuation re-certified (vs. a
+     save that only touched, say, the entity spelling) — diffed by
+     name, since code/launch/etc. can change without the valuation
+     itself moving. */
+  let projectsBefore = null;
   if (body.projects !== undefined) {
     const { list, error } = validateProjects(body.projects);
     if (error) errors.projects = error;
-    else patch.projects = list;
+    else {
+      patch.projects = list;
+      projectsBefore = (await getSettings()).projects || [];
+    }
   }
 
   if (body.occupations !== undefined) {
@@ -203,6 +213,40 @@ router.patch('/', canManage, asyncHandler(async (req, res) => {
      same admin, clicking straight back to the list) could still see
      the old data. */
   await refreshMasterData();
+
+  /* a project's valuation living only in Settings, with every existing
+     owner's unit still holding whatever snapshot was copied onto it at
+     creation time (see buildCustomer/buildShellCustomer), meant a
+     re-certification here never actually reached anyone already in the
+     system — the stale-valuation gate (90 days, see lib/gate.js) would
+     just recreate itself every quarter with no real fix available
+     short of editing each customer by hand. Only projects whose
+     valuation fields actually moved get pushed out, in one update per
+     project (arrayFilters touches every matching unit across every
+     customer in a single round trip) — a save that only renamed a
+     project or fixed its entity spelling cascades nothing. */
+  if (projectsBefore) {
+    const VAL_FIELDS = ['ask', 'resale', 'circle', 'noted', 'basis', 'by'];
+    const beforeByName = new Map(projectsBefore.map((p) => [p.name, p]));
+    for (const p of patch.projects) {
+      const prev = beforeByName.get(p.name);
+      const changed = !prev || VAL_FIELDS.some((f) => (prev[f] ?? null) !== (p[f] ?? null));
+      if (!changed) continue;
+      await Customer.updateMany(
+        { 'units.project': p.name },
+        { $set: {
+            'units.$[u].val.ask': p.ask,
+            'units.$[u].val.resale': p.resale,
+            'units.$[u].val.circle': p.circle,
+            'units.$[u].val.notedOn': p.noted,
+            'units.$[u].val.basis': p.basis,
+            'units.$[u].val.by': p.by,
+          } },
+        { arrayFilters: [{ 'u.project': p.name }] }
+      );
+    }
+  }
+
   res.json(settings);
 }));
 
